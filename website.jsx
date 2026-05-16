@@ -7,6 +7,7 @@
 
 /* eslint-disable react/no-unescaped-entities */
 import { useState, useEffect, useRef, useCallback } from "react";
+import { publicApi } from "@/lib/api";
 import {
   Phone, Mail, MapPin, Star, Menu, X, ArrowRight, Award,
   Clock, Users, CheckCircle, Settings, ChevronLeft, ChevronRight,
@@ -639,7 +640,8 @@ function About() {
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━ */
-function Services() {
+function Services({ data = [] }) {
+  const items = data.length ? data : SERVICES;
   return (
     <section id="services" className="sec" style={{ background:"var(--blk)" }}>
       <div className="mw">
@@ -651,19 +653,19 @@ function Services() {
           </p>
         </div>
         <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:22 }} className="g3">
-          {SERVICES.map((s,i) => (
+          {items.map((s,i) => (
             <div key={i} className={`svc rv d${i+1}`}>
               <div style={{ height:190,overflow:"hidden",position:"relative" }}>
-                <img src={s.img} alt={s.t} className="si" style={{ width:"100%",height:"100%",objectFit:"cover" }}/>
+                <img src={s.image?.url || s.img} alt={s.name || s.t} className="si" style={{ width:"100%",height:"100%",objectFit:"cover" }}/>
                 <div className="sic" style={{ position:"absolute",bottom:12,left:12,width:42,height:42,
                   background:"rgba(8,8,8,.82)",backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,.1)",
                   display:"flex",alignItems:"center",justifyContent:"center",transition:"background .3s" }}>
-                  <span style={{ fontSize:20 }}>{s.em}</span>
+                  <span style={{ fontSize:20 }}>{s.em || "⛏️"}</span>
                 </div>
               </div>
               <div style={{ padding:"22px 22px 26px" }}>
-                <h3 className="fc" style={{ fontSize:20,fontWeight:800,letterSpacing:.4,color:"#fff",marginBottom:9 }}>{s.t}</h3>
-                <p style={{ fontSize:13.5,color:"var(--mut)",lineHeight:1.72,marginBottom:18 }}>{s.d}</p>
+                <h3 className="fc" style={{ fontSize:20,fontWeight:800,letterSpacing:.4,color:"#fff",marginBottom:9 }}>{s.name || s.t}</h3>
+                <p style={{ fontSize:13.5,color:"var(--mut)",lineHeight:1.72,marginBottom:18 }}>{s.description || s.d}</p>
                 <button onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior:"smooth" })}
                   style={{ display:"flex",alignItems:"center",gap:6,color:"var(--y)",background:"none",border:"none",
                     cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11.5,letterSpacing:2,textTransform:"uppercase" }}>
@@ -856,8 +858,9 @@ function JCB3DX() {
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ GALLERY ━━━━━━━━━━━━━━━━━━━━━━━━ */
-function Gallery() {
+function Gallery({ data = [] }) {
   const [lb, setLb] = useState(null);
+  const items = data.length ? data : GALLERY;
   return (
     <section id="gallery" className="sec" style={{ background:"var(--blk)" }}>
       <div className="mw">
@@ -869,11 +872,11 @@ function Gallery() {
           </p>
         </div>
         <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gridAutoRows:"200px",gap:8 }} className="g4g">
-          {GALLERY.map((g,i) => (
+          {items.map((g,i) => (
             <div key={i} className={`gi rv d${(i%4)+1}`}
               style={{ gridRow: g.tall ? "span 2" : "span 1" }}
-              onClick={() => setLb(g.img)}>
-              <img src={g.img} alt={`Construction project ${i+1}`}/>
+              onClick={() => setLb(g.image?.url || g.img)}>
+              <img src={g.image?.url || g.img} alt={g.title || `Construction project ${i+1}`}/>
               <div className="go" style={{ background:"rgba(0,0,0,.25)" }}>
                 <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
                   <Eye size={24} color="var(--y)"/>
@@ -941,11 +944,12 @@ function WhyUs() {
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ REVIEWS ━━━━━━━━━━━━━━━━━━━━━━━━ */
-function Reviews() {
+function Reviews({ data = [] }) {
   const [pg, setPg] = useState(0);
+  const items = data.length ? data : REVIEWS;
   const pp = 3;
-  const tot = Math.ceil(REVIEWS.length / pp);
-  const vis = REVIEWS.slice(pg * pp, pg * pp + pp);
+  const tot = Math.ceil(items.length / pp);
+  const vis = items.slice(pg * pp, pg * pp + pp);
 
   return (
     <section id="reviews" className="sec" style={{ background:"var(--blk)",position:"relative",overflow:"hidden" }}>
@@ -968,19 +972,19 @@ function Reviews() {
             <div key={`${pg}-${i}`} className={`tc rv d${i+1} ${i===1?"ft":""}`}>
               <Quote size={26} color={i===1?"rgba(0,0,0,.22)":"var(--y)"} style={{ marginBottom:16 }}/>
               <p style={{ fontSize:13.5,lineHeight:1.8,color:i===1?"#000":"var(--mut)",marginBottom:20 }}>
-                &quot;{r.text}&quot;
+                &quot;{r.text || r.t}&quot;
               </p>
               <div style={{ display:"flex",gap:3,marginBottom:16 }}>
-                {[...Array(r.stars)].map((_,j) => <Star key={j} size={13} fill={i===1?"#000":"var(--y)"} color={i===1?"#000":"var(--y)"}/>)}
+                {[...Array(r.stars || 5)].map((_,j) => <Star key={j} size={13} fill={i===1?"#000":"var(--y)"} color={i===1?"#000":"var(--y)"}/>)}
               </div>
               <div style={{ display:"flex",alignItems:"center",gap:11 }}>
                 <div style={{ width:42,height:42,borderRadius:"50%",background:i===1?"rgba(0,0,0,.18)":"var(--y)",
                   display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                  <span className="fc" style={{ fontSize:15,fontWeight:900,color:"#000" }}>{r.av}</span>
+                  <span className="fc" style={{ fontSize:15,fontWeight:900,color:"#000" }}>{r.av || (r.name ? r.name[0] : "C")}</span>
                 </div>
                 <div>
-                  <div className="fc" style={{ fontSize:14.5,fontWeight:800,color:i===1?"#000":"#fff" }}>{r.name}</div>
-                  <div style={{ fontSize:12,color:i===1?"rgba(0,0,0,.5)":"var(--dim)" }}>{r.role}</div>
+                  <div className="fc" style={{ fontSize:14.5,fontWeight:800,color:i===1?"#000":"#fff" }}>{r.name || r.n}</div>
+                  <div style={{ fontSize:12,color:i===1?"rgba(0,0,0,.5)":"var(--dim)" }}>{r.role || r.r}</div>
                 </div>
               </div>
             </div>
@@ -1035,14 +1039,15 @@ function Contact() {
     if (Object.keys(errors).length) { setErr(errors); return; }
     setErr({}); setSt("sending");
 
-    // Save to localStorage for admin panel
-    const inquiries = JSON.parse(localStorage.getItem("sb_inquiries") || "[]");
-    inquiries.unshift({ ...form, id: Date.now(), date: new Date().toISOString() });
-    localStorage.setItem("sb_inquiries", JSON.stringify(inquiries));
-
-    await new Promise(r => setTimeout(r, 1300));
-    setSt("sent");
-    setForm({ name:"", phone:"", service:"", message:"" });
+    try {
+      await publicApi.submitInquiry(form);
+      setSt("sent");
+      setForm({ name:"", phone:"", service:"", message:"" });
+    } catch (error) {
+      console.error("Inquiry submit error:", error);
+      setSt("idle");
+      alert("Failed to send. Please call us directly.");
+    }
     setTimeout(() => setSt("idle"), 5500);
   };
 
@@ -1348,6 +1353,32 @@ function Footer() {
 export default function SriBalajiEarthMovers() {
   const active = useActiveSection(NAV.map(n => n.id));
   useScrollReveal();
+  const [data, setData] = useState({ machinery:[], gallery:[], testimonials:[], settings:{} });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        const [m, g, t, s] = await Promise.all([
+          publicApi.getMachinery(),
+          publicApi.getGallery(),
+          publicApi.getTestimonials(),
+          publicApi.getSettings(),
+        ]);
+        setData({
+          machinery: m.data.success ? m.data.data : [],
+          gallery: g.data.success ? g.data.data : [],
+          testimonials: t.data.success ? t.data.data : [],
+          settings: s.data.success ? s.data.data : {},
+        });
+      } catch (err) {
+        console.error("Fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, []);
 
   return (
     <div style={{ background:"var(--blk)",color:"#fff",fontFamily:"'Barlow',sans-serif",overflowX:"hidden" }}>
@@ -1356,11 +1387,11 @@ export default function SriBalajiEarthMovers() {
       <Hero/>
       <Ticker/>
       <About/>
-      <Services/>
+      <Services data={data.machinery}/>
       <JCB3DX/>
-      <Gallery/>
+      <Gallery data={data.gallery}/>
       <WhyUs/>
-      <Reviews/>
+      <Reviews data={data.testimonials}/>
       <Contact/>
       <LocationMap/>
       <Footer/>

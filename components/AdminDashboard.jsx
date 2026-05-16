@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { adminApi } from "@/lib/api";
 import {
   LayoutDashboard, MessageSquare, Image, Star, Wrench, Settings,
   LogOut, Menu, X, Eye, Trash2, Edit3, Plus, Check, ChevronDown,
@@ -101,45 +102,23 @@ const AdminStyles = () => (
   `}</style>
 );
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━ MOCK API ━━━━━━━━━━━━━━━━━━━━━━━━ */
-const MOCK_INQUIRIES = [
-  { _id:"1", name:"Rajesh Kumar",    phone:"9876543210", service:"JCB 3DX Rental",   status:"new",       createdAt:"2024-11-20T09:15:00Z", message:"Need JCB for 3 days foundation work" },
-  { _id:"2", name:"Senthil Murugan", phone:"9988776655", service:"Land Levelling",   status:"contacted", createdAt:"2024-11-19T14:30:00Z", message:"10 acres farm plot levelling" },
-  { _id:"3", name:"Anitha Devi",     phone:"9123456789", service:"Earth Excavation", status:"converted", createdAt:"2024-11-18T11:00:00Z", message:"House foundation 30x40" },
-  { _id:"4", name:"Mohan Raj",       phone:"9001122334", service:"Road Construction",status:"new",       createdAt:"2024-11-18T08:45:00Z", message:"Village road 500m" },
-  { _id:"5", name:"Vijaya Rajan",    phone:"9445566778", service:"Site Preparation", status:"closed",    createdAt:"2024-11-17T16:20:00Z", message:"2 acre commercial site clearing" },
-];
-
-const MOCK_REVIEWS = [
-  { _id:"1", name:"Rajesh Kumar",  role:"Civil Contractor",   stars:5, text:"Best earth mover in Tamil Nadu!", isActive:true,  source:"Google" },
-  { _id:"2", name:"Anitha Devi",   role:"Farm Land Owner",    stars:5, text:"Excellent land levelling work",   isActive:true,  source:"Google" },
-  { _id:"3", name:"Mohan Raj",     role:"Construction Mgr",   stars:5, text:"Very professional team",          isActive:true,  source:"Website" },
-  { _id:"4", name:"Krishnamurthy", role:"Panchayat Engineer", stars:4, text:"Good service for road work",      isActive:false, source:"Google" },
-];
-
-const MOCK_GALLERY = [
-  { _id:"1", title:"Foundation Excavation",  category:"Site Work",  img:"https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&q=80" },
-  { _id:"2", title:"Land Levelling Project", category:"Site Work",  img:"https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&q=80" },
-  { _id:"3", title:"JCB 3DX at Work",        category:"Machinery",  img:"https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=400&q=80" },
-  { _id:"4", title:"Road Construction",      category:"Site Work",  img:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80" },
-];
-
-const MOCK_SETTINGS = {
-  phone:        "+91 9443239842",
-  email:        "sribalajiearthmovers@gmail.com",
-  address:      "Railway Station Rd, Senthamil Nagar, Sivagangai, TN 630561",
-  workingHours: "6:00 AM – 6:00 PM · Monday to Sunday",
-  whatsapp:     "919443239842",
-  facebook:     "https://facebook.com/sribalajiearthmovers",
-  instagram:    "https://instagram.com/sribalajiearthmovers",
-  mapLat:       "9.8545663",
-  mapLng:       "78.4965071",
-  mapLink:      "https://maps.app.goo.gl/BLcBhefkxFgvycNj8",
-  heroTitle:    "Moving Earth, Building Trust",
-  heroSub:      "Professional JCB 3DX Rental & Earth Works · Tamil Nadu",
-  yearsExp:     "20",
-  projectsDone: "1000",
-  since:        "2004",
+/* ━━━━━━━━━━━━━━━━━━━━━━━━ DEFAULT SETTINGS ━━━━━━━━━━━━━━━━━━━━━━━━ */
+const DEFAULT_SETTINGS = {
+  phone:        "",
+  email:        "",
+  address:      "",
+  workingHours: "",
+  whatsapp:     "",
+  facebook:     "",
+  instagram:    "",
+  mapLat:       "",
+  mapLng:       "",
+  mapLink:      "",
+  heroTitle:    "",
+  heroSub:      "",
+  yearsExp:     "",
+  projectsDone: "",
+  since:        "",
 };
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ LOGIN PAGE ━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -154,14 +133,20 @@ function LoginPage({ onLogin }) {
     setErr("");
     if (!form.email || !form.password) { setErr("Email and password are required"); return; }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    if (form.email === "admin@sribalaji.com" && form.password === "Admin@12345") {
-      localStorage.setItem("admin_token", "demo_jwt_token_sribalaji");
-      onLogin({ name:"Admin", email:form.email, role:"super_admin" });
-    } else {
-      setErr("Invalid email or password");
+    try {
+      const res = await adminApi.login(form.email, form.password);
+      if (res.data.success) {
+        localStorage.setItem("admin_token", res.data.token);
+        onLogin(res.data.user);
+      } else {
+        setErr(res.data.message || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setErr(error.response?.data?.message || "Connection error. Please check if backend is running.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -223,14 +208,15 @@ function LoginPage({ onLogin }) {
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ SIDEBAR ━━━━━━━━━━━━━━━━━━━━━━━━ */
 const MENU = [
   { id:"dashboard",  label:"Dashboard",  icon:<LayoutDashboard size={17}/> },
-  { id:"inquiries",  label:"Inquiries",  icon:<MessageSquare size={17}/>,  badge:3 },
+  { id:"inquiries",  label:"Inquiries",  icon:<MessageSquare size={17}/>,  badge:0 },
   { id:"gallery",    label:"Gallery",    icon:<Image size={17}/> },
   { id:"reviews",    label:"Reviews",    icon:<Star size={17}/> },
   { id:"services",   label:"Services",   icon:<Wrench size={17}/> },
   { id:"settings",   label:"Settings",   icon:<Settings size={17}/> },
 ];
 
-function Sidebar({ active, setActive, collapsed, user, onLogout }) {
+function Sidebar({ active, setActive, collapsed, user, onLogout, newCount }) {
+  const menu = MENU.map(m => m.id === "inquiries" ? { ...m, badge: newCount } : m);
   return (
     <div className="sidebar" style={{ position:"fixed",top:0,left:0,bottom:0,width:collapsed?"64px":"240px",background:"var(--s1)",borderRight:"1px solid var(--bdr)",zIndex:100,display:"flex",flexDirection:"column",transition:"width .3s ease",overflow:"hidden" }}>
       {/* Logo */}
@@ -251,14 +237,14 @@ function Sidebar({ active, setActive, collapsed, user, onLogout }) {
 
       {/* Nav items */}
       <nav style={{ flex:1,padding:"12px 8px",display:"flex",flexDirection:"column",gap:2,overflowY:"auto" }}>
-        {MENU.map(m => (
+        {menu.map(m => (
           <button key={m.id} onClick={() => setActive(m.id)}
             style={{ display:"flex",alignItems:"center",gap:11,padding:"10px 12px",borderRadius:8,border:"none",cursor:"pointer",background:active===m.id?"rgba(245,166,35,.12)":"transparent",color:active===m.id?"var(--y)":"var(--mut)",transition:"all .2s",position:"relative",textAlign:"left",width:"100%" }}
             onMouseEnter={e=>{ if(active!==m.id) e.currentTarget.style.background="rgba(255,255,255,.04)"; }}
             onMouseLeave={e=>{ if(active!==m.id) e.currentTarget.style.background="transparent"; }}>
             <span style={{ flexShrink:0 }}>{m.icon}</span>
             {!collapsed && <span style={{ fontSize:13.5,fontWeight:500,flex:1 }}>{m.label}</span>}
-            {!collapsed && m.badge && <span className="badge badge-r" style={{ fontSize:10,padding:"1px 7px" }}>{m.badge}</span>}
+            {!collapsed && m.badge > 0 && <span className="badge badge-r" style={{ fontSize:10,padding:"1px 7px" }}>{m.badge}</span>}
           </button>
         ))}
       </nav>
@@ -288,13 +274,39 @@ function Sidebar({ active, setActive, collapsed, user, onLogout }) {
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ DASHBOARD ━━━━━━━━━━━━━━━━━━━━━━━━ */
 function DashboardView() {
-  const stats = [
-    { label:"Total Inquiries", val:47,  change:"+12%", up:true,  color:"var(--y)",    icon:<MessageSquare size={20}/> },
-    { label:"New (Unread)",    val:3,   change:"Today", up:true,  color:"var(--blue)", icon:<Bell size={20}/> },
-    { label:"Converted",       val:28,  change:"+8%",  up:true,  color:"var(--green)",icon:<CheckCircle size={20}/> },
-    { label:"Gallery Images",  val:24,  change:"+3",   up:true,  color:"var(--purple)",icon:<Image size={20}/> },
-  ];
-  const recentInq = MOCK_INQUIRIES.slice(0,4);
+  const [stats, setStats] = useState([
+    { label:"Total Inquiries", val:0,  change:"...", up:true,  color:"var(--y)",    icon:<MessageSquare size={20}/> },
+    { label:"New (Unread)",    val:0,   change:"Today", up:true,  color:"var(--blue)", icon:<Bell size={20}/> },
+    { label:"Converted",       val:0,  change:"...",  up:true,  color:"var(--green)",icon:<CheckCircle size={20}/> },
+    { label:"Gallery Images",  val:0,  change:"...",   up:true,  color:"var(--purple)",icon:<Image size={20}/> },
+  ]);
+  const [recentInq, setRecentInq] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await adminApi.getDashboard();
+        if (res.data.success) {
+          const s = res.data.data.overview;
+          setStats([
+            { label:"Total Inquiries", val:s.totalInquiries,  change:`${s.monthlyGrowth}%`, up:s.monthlyGrowth>=0,  color:"var(--y)",    icon:<MessageSquare size={20}/> },
+            { label:"New (Unread)",    val:s.newInquiries,    change:"Active", up:true,  color:"var(--blue)", icon:<Bell size={20}/> },
+            { label:"Total Projects",  val:s.totalProjects,   change:"+",  up:true,  color:"var(--green)",icon:<CheckCircle size={20}/> },
+            { label:"Gallery Images",  val:s.totalGallery,    change:"+",   up:true,  color:"var(--purple)",icon:<Image size={20}/> },
+          ]);
+        }
+        const inqRes = await adminApi.getInquiries({ limit: 5 });
+        if (inqRes.data.success) setRecentInq(inqRes.data.data);
+      } catch (err) {
+        console.error("Fetch dashboard stats error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
   const statusColor = { new:"badge-r", contacted:"badge-y", converted:"badge-g", closed:"badge-b" };
 
   return (
@@ -349,14 +361,14 @@ function DashboardView() {
 
         {/* Quick stats */}
         <div className="ac">
-          <h3 style={{ fontSize:15,fontWeight:700,marginBottom:16 }}>Business Info</h3>
+          <h3 style={{ fontSize:15,fontWeight:700,marginBottom:16 }}>Real-time Summary</h3>
           {[
-            { l:"Experience",    v:"20+ Years"   },
-            { l:"Est. Year",     v:"2004"        },
-            { l:"Projects Done", v:"1,000+"      },
-            { l:"Machine",       v:"JCB 3DX"     },
-            { l:"Work Hours",    v:"6 AM – 6 PM" },
-            { l:"Rating",        v:"4.6 / 5 ★"  },
+            { l:"Active Machinery", v:stats[2]?.val || "..." },
+            { l:"Total Inquiries",  v:stats[0]?.val || "..." },
+            { l:"New Requests",    v:stats[1]?.val || "..." },
+            { l:"Gallery Count",   v:stats[3]?.val || "..." },
+            { l:"Admin Status",    v:"Connected" },
+            { l:"DB Status",       v:"Synchronized" },
           ].map((x,i)=>(
             <div key={i} style={{ display:"flex",justifyContent:"space-between",padding:"9px 0",borderBottom:i<5?"1px solid var(--bdr)":"none" }}>
               <span style={{ fontSize:13,color:"var(--mut)" }}>{x.l}</span>
@@ -371,10 +383,27 @@ function DashboardView() {
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ INQUIRIES ━━━━━━━━━━━━━━━━━━━━━━━━ */
 function InquiriesView() {
-  const [items, setItems] = useState(MOCK_INQUIRIES);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [sel, setSel] = useState(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await adminApi.getInquiries();
+      if (res.data.success) setItems(res.data.data);
+    } catch (err) {
+      console.error("Fetch inquiries error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const statusColor = { new:"badge-r", contacted:"badge-y", converted:"badge-g", closed:"badge-b" };
   const filtered = items.filter(x => {
@@ -383,14 +412,31 @@ function InquiriesView() {
     return matchStatus && matchSearch;
   });
 
-  const updateStatus = (id, status) => {
-    setItems(p => p.map(x => x._id===id ? {...x,status} : x));
-    if(sel?._id===id) setSel(p=>({...p,status}));
+  const updateStatus = async (id, status) => {
+    try {
+      const res = await adminApi.updateInquiry(id, { status });
+      if (res.data.success) {
+        setItems(p => p.map(x => x._id===id ? {...x,status} : x));
+        if(sel?._id===id) setSel(p=>({...p,status}));
+      }
+    } catch (err) {
+      console.error("Update status error:", err);
+      alert("Failed to update status");
+    }
   };
 
-  const deleteItem = id => {
-    setItems(p => p.filter(x=>x._id!==id));
-    setSel(null);
+  const deleteItem = async id => {
+    if (!confirm("Are you sure you want to delete this inquiry?")) return;
+    try {
+      const res = await adminApi.deleteInquiry(id);
+      if (res.data.success) {
+        setItems(p => p.filter(x=>x._id!==id));
+        setSel(null);
+      }
+    } catch (err) {
+      console.error("Delete inquiry error:", err);
+      alert("Failed to delete inquiry");
+    }
   };
 
   return (
@@ -422,48 +468,55 @@ function InquiriesView() {
 
       {/* Table */}
       <div className="ac" style={{ padding:0,overflow:"hidden" }}>
-        <div style={{ overflowX:"auto" }}>
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th style={{ paddingLeft:20 }}>Customer</th><th>Phone</th><th>Service</th>
-                <th>Status</th><th>Date</th><th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(inq=>(
-                <tr key={inq._id}>
-                  <td style={{ paddingLeft:20 }}>
-                    <div style={{ fontWeight:600,color:"#fff",fontSize:14 }}>{inq.name}</div>
-                    {inq.message && <div style={{ fontSize:11.5,color:"var(--dim)",marginTop:2,maxWidth:180,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{inq.message}</div>}
-                  </td>
-                  <td><a href={`tel:${inq.phone}`} style={{ color:"var(--y)",textDecoration:"none",fontWeight:500 }}>{inq.phone}</a></td>
-                  <td>{inq.service||"—"}</td>
-                  <td>
-                    <select className="inp" value={inq.status} onChange={e=>updateStatus(inq._id,e.target.value)}
-                      style={{ width:"auto",padding:"5px 10px",fontSize:12,borderRadius:999 }}>
-                      <option value="new">New</option>
-                      <option value="contacted">Contacted</option>
-                      <option value="converted">Converted</option>
-                      <option value="closed">Closed</option>
-                    </select>
-                  </td>
-                  <td style={{ fontSize:12 }}>{new Date(inq.createdAt).toLocaleDateString("en-IN")}</td>
-                  <td>
-                    <div style={{ display:"flex",gap:6 }}>
-                      <button className="btn btn-o btn-sm" onClick={()=>setSel(inq)}><Eye size={12}/>View</button>
-                      <a href={`tel:${inq.phone}`} className="btn btn-sm" style={{ textDecoration:"none",background:"rgba(34,197,94,.1)",color:"var(--green)",border:"1px solid rgba(34,197,94,.2)",borderRadius:6,padding:"6px 12px",fontSize:12 }}>
-                        <Phone size={12}/>Call
-                      </a>
-                      <button className="btn btn-r btn-sm" onClick={()=>deleteItem(inq._id)}><Trash2 size={12}/></button>
-                    </div>
-                  </td>
+        {loading ? (
+          <div style={{ padding:60,textAlign:"center",color:"var(--y)" }}>
+            <RefreshCw className="spin" size={32} style={{ margin:"0 auto 12px" }}/>
+            <div style={{ fontSize:14 }}>Loading inquiries...</div>
+          </div>
+        ) : (
+          <div style={{ overflowX:"auto" }}>
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th style={{ paddingLeft:20 }}>Customer</th><th>Phone</th><th>Service</th>
+                  <th>Status</th><th>Date</th><th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length===0 && <div style={{ padding:"40px 20px",textAlign:"center",color:"var(--dim)",fontSize:14 }}>No inquiries found</div>}
-        </div>
+              </thead>
+              <tbody>
+                {filtered.map(inq=>(
+                  <tr key={inq._id}>
+                    <td style={{ paddingLeft:20 }}>
+                      <div style={{ fontWeight:600,color:"#fff",fontSize:14 }}>{inq.name}</div>
+                      {inq.message && <div style={{ fontSize:11.5,color:"var(--dim)",marginTop:2,maxWidth:180,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{inq.message}</div>}
+                    </td>
+                    <td><a href={`tel:${inq.phone}`} style={{ color:"var(--y)",textDecoration:"none",fontWeight:500 }}>{inq.phone}</a></td>
+                    <td>{inq.service||"—"}</td>
+                    <td>
+                      <select className="inp" value={inq.status} onChange={e=>updateStatus(inq._id,e.target.value)}
+                        style={{ width:"auto",padding:"5px 10px",fontSize:12,borderRadius:999 }}>
+                        <option value="new">New</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="converted">Converted</option>
+                        <option value="closed">Closed</option>
+                      </select>
+                    </td>
+                    <td style={{ fontSize:12 }}>{new Date(inq.createdAt).toLocaleDateString("en-IN")}</td>
+                    <td>
+                      <div style={{ display:"flex",gap:6 }}>
+                        <button className="btn btn-o btn-sm" onClick={()=>setSel(inq)}><Eye size={12}/>View</button>
+                        <a href={`tel:${inq.phone}`} className="btn btn-sm" style={{ textDecoration:"none",background:"rgba(34,197,94,.1)",color:"var(--green)",border:"1px solid rgba(34,197,94,.2)",borderRadius:6,padding:"6px 12px",fontSize:12 }}>
+                          <Phone size={12}/>Call
+                        </a>
+                        <button className="btn btn-r btn-sm" onClick={()=>deleteItem(inq._id)}><Trash2 size={12}/></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filtered.length===0 && <div style={{ padding:"40px 20px",textAlign:"center",color:"var(--dim)",fontSize:14 }}>No inquiries found</div>}
+          </div>
+        )}
       </div>
 
       {/* Detail modal */}
@@ -507,16 +560,62 @@ function InquiriesView() {
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ GALLERY ━━━━━━━━━━━━━━━━━━━━━━━━ */
 function GalleryView() {
-  const [items, setItems] = useState(MOCK_GALLERY);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [newItem, setNewItem] = useState({ title:"",category:"Site Work",url:"" });
+  const [newItem, setNewItem] = useState({ title:"", category:"Site Work" });
+  const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  const addItem = () => {
-    if (!newItem.url) return;
-    setItems(p=>[...p,{ _id:Date.now().toString(),title:newItem.title||"New Image",category:newItem.category,img:newItem.url }]);
-    setNewItem({ title:"",category:"Site Work",url:"" });
-    setShowAdd(false);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await adminApi.getGallery();
+      if (res.data.success) setItems(res.data.data);
+    } catch (err) {
+      console.error("Fetch gallery error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const addItem = async () => {
+    if (!file) { alert("Please select an image"); return; }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("data", JSON.stringify(newItem));
+      
+      const res = await adminApi.uploadGallery(formData);
+      if (res.data.success) {
+        setItems(p => [res.data.data, ...p]);
+        setShowAdd(false);
+        setFile(null);
+        setNewItem({ title:"", category:"Site Work" });
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Failed to upload image");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const deleteItem = async id => {
+    if (!confirm("Are you sure?")) return;
+    try {
+      const res = await adminApi.deleteGallery(id);
+      if (res.data.success) setItems(p => p.filter(x => x._id !== id));
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete");
+    }
   };
 
   return (
@@ -530,10 +629,15 @@ function GalleryView() {
       </div>
 
       <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:14 }}>
-        {items.map((g,i)=>(
+        {loading ? (
+          <div style={{ gridColumn:"1/-1",padding:60,textAlign:"center",color:"var(--y)" }}>
+            <RefreshCw className="spin" size={32} style={{ margin:"0 auto 12px" }}/>
+            <div>Loading gallery...</div>
+          </div>
+        ) : items.map((g,i)=>(
           <div key={g._id} style={{ position:"relative",border:"1px solid var(--bdr)",borderRadius:8,overflow:"hidden",background:"var(--s2)" }}>
-            <div style={{ height:150,overflow:"hidden",cursor:"pointer" }} onClick={()=>setPreview(g.img)}>
-              <img src={g.img} alt={g.title} style={{ width:"100%",height:"100%",objectFit:"cover",transition:"transform .3s" }}
+            <div style={{ height:150,overflow:"hidden",cursor:"pointer" }} onClick={()=>setPreview(g.image?.url)}>
+              <img src={g.image?.url} alt={g.title} style={{ width:"100%",height:"100%",objectFit:"cover",transition:"transform .3s" }}
                 onMouseEnter={e=>e.target.style.transform="scale(1.06)"}
                 onMouseLeave={e=>e.target.style.transform="scale(1)"}/>
             </div>
@@ -542,7 +646,7 @@ function GalleryView() {
                 <div style={{ fontSize:12.5,fontWeight:600,color:"#fff",marginBottom:2 }}>{g.title}</div>
                 <span className="badge badge-y" style={{ fontSize:10 }}>{g.category}</span>
               </div>
-              <button className="btn btn-r btn-sm" onClick={()=>setItems(p=>p.filter(x=>x._id!==g._id))}><Trash2 size={12}/></button>
+              <button className="btn btn-r btn-sm" onClick={()=>deleteItem(g._id)}><Trash2 size={12}/></button>
             </div>
           </div>
         ))}
@@ -558,8 +662,11 @@ function GalleryView() {
             </div>
             <div style={{ padding:22,display:"flex",flexDirection:"column",gap:14 }}>
               <div>
-                <label style={{ fontSize:12,color:"var(--mut)",display:"block",marginBottom:6 }}>Image URL *</label>
-                <input className="inp" placeholder="https://images.unsplash.com/..." value={newItem.url} onChange={e=>setNewItem({...newItem,url:e.target.value})}/>
+                <label style={{ fontSize:12,color:"var(--mut)",display:"block",marginBottom:6 }}>Select Image *</label>
+                <div style={{ position:"relative" }}>
+                  <input type="file" accept="image/*" onChange={e => setFile(e.target.files[0])}
+                    style={{ width:"100%",background:"var(--s3)",padding:10,borderRadius:6,border:"1px dashed var(--bdr2)",fontSize:13 }}/>
+                </div>
               </div>
               <div>
                 <label style={{ fontSize:12,color:"var(--mut)",display:"block",marginBottom:6 }}>Title</label>
@@ -568,12 +675,15 @@ function GalleryView() {
               <div>
                 <label style={{ fontSize:12,color:"var(--mut)",display:"block",marginBottom:6 }}>Category</label>
                 <select className="inp" value={newItem.category} onChange={e=>setNewItem({...newItem,category:e.target.value})}>
-                  <option>Site Work</option><option>Machinery</option><option>Before-After</option><option>Team</option>
+                  <option>Site Work</option><option>Machinery</option><option>Before-After</option><option>Team</option><option>Other</option>
                 </select>
               </div>
-              {newItem.url && <img src={newItem.url} alt="preview" style={{ width:"100%",height:180,objectFit:"cover",borderRadius:6,border:"1px solid var(--bdr)" }} onError={e=>e.target.style.display="none"}/>}
+              {file && <img src={URL.createObjectURL(file)} alt="preview" style={{ width:"100%",height:180,objectFit:"cover",borderRadius:6,border:"1px solid var(--bdr)" }}/>}
               <div style={{ display:"flex",gap:10,marginTop:4 }}>
-                <button className="btn btn-p" onClick={addItem} style={{ flex:1,justifyContent:"center" }}><Save size={14}/>Add Image</button>
+                <button className="btn btn-p" onClick={addItem} style={{ flex:1,justifyContent:"center" }} disabled={uploading}>
+                  {uploading ? <RefreshCw className="spin" size={14}/> : <Save size={14}/>}
+                  <span>{uploading ? "Uploading..." : "Add Image"}</span>
+                </button>
                 <button className="btn btn-o" onClick={()=>setShowAdd(false)} style={{ flex:1,justifyContent:"center" }}>Cancel</button>
               </div>
             </div>
@@ -594,21 +704,63 @@ function GalleryView() {
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ REVIEWS ━━━━━━━━━━━━━━━━━━━━━━━━ */
 function ReviewsView() {
-  const [items, setItems] = useState(MOCK_REVIEWS);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState({ name:"",role:"",stars:5,text:"",source:"Google" });
 
-  const saveReview = () => {
-    if (!form.name || !form.text) return;
-    if (editItem) {
-      setItems(p=>p.map(x=>x._id===editItem._id?{...x,...form}:x));
-      setEditItem(null);
-    } else {
-      setItems(p=>[...p,{_id:Date.now().toString(),...form,isActive:true}]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await adminApi.getTestimonials();
+      if (res.data.success) setItems(res.data.data);
+    } catch (err) {
+      console.error("Fetch reviews error:", err);
+    } finally {
+      setLoading(false);
     }
-    setForm({ name:"",role:"",stars:5,text:"",source:"Google" });
-    setShowAdd(false);
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const saveReview = async () => {
+    if (!form.name || !form.text) return;
+    try {
+      if (editItem) {
+        const res = await adminApi.updateTestimonial(editItem._id, form);
+        if (res.data.success) setItems(p=>p.map(x=>x._id===editItem._id?{...x,...form}:x));
+      } else {
+        const res = await adminApi.createTestimonial(form);
+        if (res.data.success) setItems(p=>[res.data.data, ...p]);
+      }
+      setShowAdd(false);
+      setForm({ name:"",role:"",stars:5,text:"",source:"Google" });
+    } catch (err) {
+      console.error("Save review error:", err);
+      alert("Failed to save review");
+    }
+  };
+
+  const deleteReview = async id => {
+    if (!confirm("Delete this review?")) return;
+    try {
+      const res = await adminApi.deleteTestimonial(id);
+      if (res.data.success) setItems(p=>p.filter(x=>x._id!==id));
+    } catch (err) {
+      console.error("Delete review error:", err);
+    }
+  };
+
+  const toggleActive = async r => {
+    try {
+      const res = await adminApi.updateTestimonial(r._id, { isActive: !r.isActive });
+      if (res.data.success) setItems(p=>p.map(x=>x._id===r._id?{...x,isActive:!r.isActive}:x));
+    } catch (err) {
+      console.error("Toggle active error:", err);
+    }
   };
 
   const openEdit = r => {
@@ -628,7 +780,12 @@ function ReviewsView() {
       </div>
 
       <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:14 }}>
-        {items.map(r=>(
+        {loading ? (
+          <div style={{ gridColumn:"1/-1",padding:60,textAlign:"center",color:"var(--y)" }}>
+            <RefreshCw className="spin" size={32} style={{ margin:"0 auto 12px" }}/>
+            <div>Loading reviews...</div>
+          </div>
+        ) : items.map(r=>(
           <div key={r._id} className="ac" style={{ position:"relative" }}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12 }}>
               <div style={{ display:"flex",gap:3 }}>
@@ -636,10 +793,10 @@ function ReviewsView() {
               </div>
               <div style={{ display:"flex",gap:6,alignItems:"center" }}>
                 <span className={`badge ${r.isActive?"badge-g":"badge-r"}`}>{r.isActive?"Active":"Hidden"}</span>
-                <button onClick={()=>setItems(p=>p.map(x=>x._id===r._id?{...x,isActive:!x.isActive}:x))}
+                <button onClick={()=>toggleActive(r)}
                   className="btn btn-o btn-sm"><Eye size={12}/></button>
                 <button onClick={()=>openEdit(r)} className="btn btn-o btn-sm"><Edit3 size={12}/></button>
-                <button onClick={()=>setItems(p=>p.filter(x=>x._id!==r._id))} className="btn btn-r btn-sm"><Trash2 size={12}/></button>
+                <button onClick={()=>deleteReview(r._id)} className="btn btn-r btn-sm"><Trash2 size={12}/></button>
               </div>
             </div>
             <p style={{ fontSize:13.5,color:"var(--mut)",lineHeight:1.7,marginBottom:14 }}>"{r.text}"</p>
@@ -694,21 +851,55 @@ function ReviewsView() {
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━ */
 function ServicesView() {
-  const initServices = [
-    { _id:"1", title:"Earth Excavation",      desc:"Precision excavation for foundations, basements, and canals.", isActive:true },
-    { _id:"2", title:"Land Levelling",         desc:"Agricultural and residential plot grading and levelling.",      isActive:true },
-    { _id:"3", title:"Road Construction",      desc:"Sub-grade prep, drainage cutting, and earthwork support.",       isActive:true },
-    { _id:"4", title:"Site Preparation",       desc:"Clearing, stripping, and access road creation before building.", isActive:true },
-    { _id:"5", title:"Demolition Support",     desc:"Controlled dismantling and debris clearance.",                   isActive:true },
-    { _id:"6", title:"Soil & Material Haulage",desc:"Transport of excavated earth, sand, and rubble.",               isActive:true },
-  ];
-  const [services, setServices] = useState(initServices);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [edit, setEdit] = useState(null);
 
-  const save = () => {
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await adminApi.getMachinery();
+      if (res.data.success) setServices(res.data.data);
+    } catch (err) {
+      console.error("Fetch machinery error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const save = async () => {
     if (!edit) return;
-    setServices(p=>p.map(x=>x._id===edit._id?edit:x));
-    setEdit(null);
+    try {
+      const formData = new FormData();
+      formData.append("data", JSON.stringify({
+        name: edit.name,
+        description: edit.description,
+        isActive: edit.isActive,
+      }));
+      const res = await adminApi.updateMachinery(edit._id, formData);
+      if (res.data.success) {
+        setServices(p=>p.map(x=>x._id===edit._id?res.data.data:x));
+        setEdit(null);
+      }
+    } catch (err) {
+      console.error("Update machinery error:", err);
+      alert("Failed to update service");
+    }
+  };
+
+  const toggleActive = async s => {
+    try {
+      const formData = new FormData();
+      formData.append("data", JSON.stringify({ isActive: !s.isActive }));
+      const res = await adminApi.updateMachinery(s._id, formData);
+      if (res.data.success) setServices(p=>p.map(x=>x._id===s._id?{...x,isActive:!s.isActive}:x));
+    } catch (err) {
+      console.error("Toggle machinery active error:", err);
+    }
   };
 
   return (
@@ -718,12 +909,17 @@ function ServicesView() {
         <p style={{ fontSize:13,color:"var(--mut)" }}>Edit service descriptions shown on the website</p>
       </div>
       <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
-        {services.map(s=>(
+        {loading ? (
+          <div style={{ padding:60,textAlign:"center",color:"var(--y)" }}>
+            <RefreshCw className="spin" size={32} style={{ margin:"0 auto 12px" }}/>
+            <div>Loading services...</div>
+          </div>
+        ) : services.map(s=>(
           <div key={s._id} className="ac" style={{ display:"flex",alignItems:"center",gap:16 }}>
             {edit?._id===s._id ? (
               <div style={{ flex:1,display:"flex",flexDirection:"column",gap:10 }}>
-                <input className="inp" value={edit.title} onChange={e=>setEdit({...edit,title:e.target.value})} style={{ fontWeight:600 }}/>
-                <textarea className="inp" rows={2} value={edit.desc} onChange={e=>setEdit({...edit,desc:e.target.value})} style={{ resize:"none" }}/>
+                <input className="inp" value={edit.name} onChange={e=>setEdit({...edit,name:e.target.value})} style={{ fontWeight:600 }}/>
+                <textarea className="inp" rows={2} value={edit.description} onChange={e=>setEdit({...edit,description:e.target.value})} style={{ resize:"none" }}/>
                 <div style={{ display:"flex",gap:8 }}>
                   <button className="btn btn-g btn-sm" onClick={save}><Save size={12}/>Save</button>
                   <button className="btn btn-o btn-sm" onClick={()=>setEdit(null)}>Cancel</button>
@@ -732,11 +928,11 @@ function ServicesView() {
             ) : (
               <>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:15,fontWeight:600,color:"#fff",marginBottom:4 }}>{s.title}</div>
-                  <div style={{ fontSize:13,color:"var(--mut)" }}>{s.desc}</div>
+                  <div style={{ fontSize:15,fontWeight:600,color:"#fff",marginBottom:4 }}>{s.name}</div>
+                  <div style={{ fontSize:13,color:"var(--mut)" }}>{s.description}</div>
                 </div>
                 <div style={{ display:"flex",gap:8,flexShrink:0 }}>
-                  <button onClick={()=>setServices(p=>p.map(x=>x._id===s._id?{...x,isActive:!x.isActive}:x))}
+                  <button onClick={()=>toggleActive(s)}
                     className="btn btn-sm" style={{ background:s.isActive?"rgba(34,197,94,.1)":"rgba(239,68,68,.1)",color:s.isActive?"var(--green)":"var(--red)",border:"1px solid",borderColor:s.isActive?"rgba(34,197,94,.2)":"rgba(239,68,68,.2)",borderRadius:6 }}>
                     {s.isActive?"Active":"Hidden"}
                   </button>
@@ -753,13 +949,38 @@ function ServicesView() {
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ SETTINGS ━━━━━━━━━━━━━━━━━━━━━━━━ */
 function SettingsView() {
-  const [cfg, setCfg] = useState(MOCK_SETTINGS);
+  const [cfg, setCfg] = useState({});
+  const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState("contact");
 
-  const save = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await adminApi.getSettings();
+        if (res.data.success) {
+          setCfg({ ...DEFAULT_SETTINGS, ...res.data.data }); // Merge with empty defaults
+        }
+      } catch (err) {
+        console.error("Fetch settings error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const save = async () => {
+    try {
+      const res = await adminApi.updateSettings(cfg);
+      if (res.data.success) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch (err) {
+      console.error("Save settings error:", err);
+      alert("Failed to save settings");
+    }
   };
 
   const tabs = [
@@ -794,96 +1015,105 @@ function SettingsView() {
         ))}
       </div>
 
-      <div className="ac">
-        {activeTab==="contact" && (
-          <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
-            <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Contact Information</h3>
-            {[
-              { l:"Phone Number",    k:"phone",    t:"text",  ph:"+91 9443239842" },
-              { l:"Email Address",   k:"email",    t:"email", ph:"sribalajiearthmovers@gmail.com" },
-              { l:"WhatsApp Number", k:"whatsapp", t:"text",  ph:"919443239842 (with country code, no +)" },
-              { l:"Business Address",k:"address",  t:"text",  ph:"Full street address" },
-              { l:"Working Hours",   k:"workingHours",t:"text",ph:"6:00 AM – 6:00 PM · Monday to Sunday" },
-            ].map(f=>(
-              <div key={f.k}>
-                <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>{f.l}</label>
-                <input className="inp" type={f.t} value={cfg[f.k]} onChange={e=>setCfg({...cfg,[f.k]:e.target.value})} placeholder={f.ph}/>
-              </div>
-            ))}
+      <div className="ac" style={{ minHeight:300, position:"relative" }}>
+        {loading ? (
+          <div style={{ padding:60,textAlign:"center",color:"var(--y)" }}>
+            <RefreshCw className="spin" size={32} style={{ margin:"0 auto 12px" }}/>
+            <div>Loading settings...</div>
           </div>
-        )}
+        ) : (
+          <>
+            {activeTab==="contact" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
+                <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Contact Information</h3>
+                {[
+                  { l:"Phone Number",    k:"phone",    t:"text",  ph:"+91 9443239842" },
+                  { l:"Email Address",   k:"email",    t:"email", ph:"sribalajiearthmovers@gmail.com" },
+                  { l:"WhatsApp Number", k:"whatsapp", t:"text",  ph:"919443239842 (with country code, no +)" },
+                  { l:"Business Address",k:"address",  t:"text",  ph:"Full street address" },
+                  { l:"Working Hours",   k:"workingHours",t:"text",ph:"6:00 AM – 6:00 PM · Monday to Sunday" },
+                ].map(f=>(
+                  <div key={f.k}>
+                    <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>{f.l}</label>
+                    <input className="inp" type={f.t} value={cfg[f.k]||""} onChange={e=>setCfg({...cfg,[f.k]:e.target.value})} placeholder={f.ph}/>
+                  </div>
+                ))}
+              </div>
+            )}
 
-        {activeTab==="hero" && (
-          <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
-            <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Hero Section Content</h3>
-            {[
-              { l:"Hero Main Title",    k:"heroTitle", t:"text", ph:"Moving Earth, Building Trust" },
-              { l:"Hero Subtitle",      k:"heroSub",   t:"text", ph:"Professional JCB 3DX..." },
-            ].map(f=>(
-              <div key={f.k}>
-                <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>{f.l}</label>
-                <input className="inp" value={cfg[f.k]} onChange={e=>setCfg({...cfg,[f.k]:e.target.value})} placeholder={f.ph}/>
+            {activeTab==="hero" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
+                <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Hero Section Content</h3>
+                {[
+                  { l:"Hero Main Title",    k:"heroTitle", t:"text", ph:"Moving Earth, Building Trust" },
+                  { l:"Hero Subtitle",      k:"heroSub",   t:"text", ph:"Professional JCB 3DX..." },
+                ].map(f=>(
+                  <div key={f.k}>
+                    <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>{f.l}</label>
+                    <input className="inp" value={cfg[f.k]||""} onChange={e=>setCfg({...cfg,[f.k]:e.target.value})} placeholder={f.ph}/>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {activeTab==="social" && (
-          <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
-            <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Social Media & Google Maps</h3>
-            {[
-              { l:"Facebook URL",       k:"facebook",  ph:"https://facebook.com/..." },
-              { l:"Instagram URL",      k:"instagram", ph:"https://instagram.com/..." },
-              { l:"Google Maps Latitude", k:"mapLat",  ph:"9.8545663" },
-              { l:"Google Maps Longitude",k:"mapLng",  ph:"78.4965071" },
-              { l:"Google Maps Short Link",k:"mapLink", ph:"https://maps.app.goo.gl/BLcBhefkxFgvycNj8" },
-            ].map(f=>(
-              <div key={f.k}>
-                <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>{f.l}</label>
-                <input className="inp" value={cfg[f.k]} onChange={e=>setCfg({...cfg,[f.k]:e.target.value})} placeholder={f.ph}/>
+            {activeTab==="social" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
+                <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Social Media & Google Maps</h3>
+                {[
+                  { l:"Facebook URL",       k:"facebook",  ph:"https://facebook.com/..." },
+                  { l:"Instagram URL",      k:"instagram", ph:"https://instagram.com/..." },
+                  { l:"Google Maps Latitude", k:"mapLat",  ph:"9.8545663" },
+                  { l:"Google Maps Longitude",k:"mapLng",  ph:"78.4965071" },
+                  { l:"Google Maps Short Link",k:"mapLink", ph:"https://maps.app.goo.gl/BLcBhefkxFgvycNj8" },
+                ].map(f=>(
+                  <div key={f.k}>
+                    <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>{f.l}</label>
+                    <input className="inp" value={cfg[f.k]||""} onChange={e=>setCfg({...cfg,[f.k]:e.target.value})} placeholder={f.ph}/>
+                  </div>
+                ))}
+                <div style={{ padding:"12px 14px",background:"rgba(245,166,35,.06)",border:"1px solid rgba(245,166,35,.2)",borderRadius:6,fontSize:13,color:"var(--y)" }}>
+                  💡 Current map: <a href={cfg.mapLink || "https://maps.app.goo.gl/BLcBhefkxFgvycNj8"} target="_blank" rel="noreferrer" style={{ color:"var(--yl)",textDecoration:"none" }}>Open in Google Maps ↗</a>
+                </div>
               </div>
-            ))}
-            <div style={{ padding:"12px 14px",background:"rgba(245,166,35,.06)",border:"1px solid rgba(245,166,35,.2)",borderRadius:6,fontSize:13,color:"var(--y)" }}>
-              💡 Current map: <a href={cfg.mapLink || "https://maps.app.goo.gl/BLcBhefkxFgvycNj8"} target="_blank" rel="noreferrer" style={{ color:"var(--yl)",textDecoration:"none" }}>Open in Google Maps ↗</a>
-            </div>
-          </div>
-        )}
+            )}
 
-        {activeTab==="stats" && (
-          <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
-            <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Business Statistics</h3>
-            {[
-              { l:"Years of Experience", k:"yearsExp",     ph:"20" },
-              { l:"Projects Completed",  k:"projectsDone", ph:"1000" },
-              { l:"Established Year",    k:"since",        ph:"2004" },
-            ].map(f=>(
-              <div key={f.k}>
-                <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>{f.l}</label>
-                <input className="inp" type="number" value={cfg[f.k]} onChange={e=>setCfg({...cfg,[f.k]:e.target.value})} placeholder={f.ph}/>
+            {activeTab==="stats" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
+                <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Business Statistics</h3>
+                {[
+                  { l:"Years of Experience", k:"yearsExp",     ph:"20" },
+                  { l:"Projects Completed",  k:"projectsDone", ph:"1000" },
+                  { l:"Established Year",    k:"since",        ph:"2004" },
+                ].map(f=>(
+                  <div key={f.k}>
+                    <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>{f.l}</label>
+                    <input className="inp" type="number" value={cfg[f.k]||""} onChange={e=>setCfg({...cfg,[f.k]:e.target.value})} placeholder={f.ph}/>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {activeTab==="account" && (
-          <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
-            <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Admin Account Security</h3>
-            <div style={{ padding:"12px 14px",background:"rgba(59,130,246,.08)",border:"1px solid rgba(59,130,246,.2)",borderRadius:6,fontSize:13,color:"var(--blue)",display:"flex",gap:10 }}>
-              <AlertTriangle size={15} style={{ flexShrink:0,marginTop:1 }}/>
-              For production: set MONGODB_URI, JWT_SECRET, and CLOUDINARY credentials in .env and use the /api/auth/change-password endpoint to update your password.
-            </div>
-            {[
-              { l:"Current Admin Email", v:"admin@sribalaji.com", disabled:true },
-              { l:"New Password", v:"", placeholder:"Enter new password", type:"password" },
-              { l:"Confirm Password", v:"", placeholder:"Confirm new password", type:"password" },
-            ].map((f,i)=>(
-              <div key={i}>
-                <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>{f.l}</label>
-                <input className="inp" type={f.type||"text"} defaultValue={f.v} placeholder={f.placeholder} disabled={f.disabled}
-                  style={{ opacity:f.disabled?.5:1,cursor:f.disabled?"not-allowed":"text" }}/>
+            {activeTab==="account" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
+                <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Admin Account Security</h3>
+                <div style={{ padding:"12px 14px",background:"rgba(59,130,246,.08)",border:"1px solid rgba(59,130,246,.2)",borderRadius:6,fontSize:13,color:"var(--blue)",display:"flex",gap:10 }}>
+                  <AlertTriangle size={15} style={{ flexShrink:0,marginTop:1 }}/>
+                  For production: set MONGODB_URI, JWT_SECRET, and CLOUDINARY credentials in .env and use the /api/auth/change-password endpoint to update your password.
+                </div>
+                {[
+                  { l:"Current Admin Email", v:"admin@sribalaji.com", disabled:true },
+                  { l:"New Password", v:"", placeholder:"Enter new password", type:"password" },
+                  { l:"Confirm Password", v:"", placeholder:"Confirm new password", type:"password" },
+                ].map((f,i)=>(
+                  <div key={i}>
+                    <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>{f.l}</label>
+                    <input className="inp" type={f.type||"text"} defaultValue={f.v} placeholder={f.placeholder} disabled={f.disabled}
+                      style={{ opacity:f.disabled?.5:1,cursor:f.disabled?"not-allowed":"text" }}/>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
 
         <button className="btn btn-p" onClick={save} style={{ marginTop:22,alignSelf:"flex-start" }}>
@@ -896,12 +1126,35 @@ function SettingsView() {
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ MAIN ADMIN APP ━━━━━━━━━━━━━━━━━━━━━━━━ */
 export default function AdminDashboard() {
-  const [user, setUser] = useState(() => {
-    try { const t = localStorage.getItem("admin_token"); return t ? { name:"Admin",email:"admin@sribalaji.com",role:"super_admin" } : null; } catch { return null; }
-  });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [newInqCount, setNewInqCount] = useState(0);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem("admin_token");
+      if (!token) { setLoading(false); return; }
+      try {
+        const res = await adminApi.getMe();
+        if (res.data.success) {
+          setUser(res.data.user);
+          // Also fetch stats for the badge
+          const statsRes = await adminApi.getDashboard();
+          if (statsRes.data.success) setNewInqCount(statsRes.data.data.overview.newInquiries);
+        }
+        else localStorage.removeItem("admin_token");
+      } catch (err) {
+        console.error("Auth check failed:", err);
+        localStorage.removeItem("admin_token");
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   const VIEWS = {
     dashboard: <DashboardView/>,
@@ -917,6 +1170,14 @@ export default function AdminDashboard() {
     setUser(null);
   };
 
+  if (loading) {
+    return (
+      <div style={{ minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"var(--bg)",color:"var(--y)" }}>
+        <RefreshCw className="spin" size={32}/>
+      </div>
+    );
+  }
+
   if (!user) return <LoginPage onLogin={setUser}/>;
 
   const sideW = collapsed ? 64 : 240;
@@ -928,7 +1189,7 @@ export default function AdminDashboard() {
       {/* Sidebar — desktop */}
       <div style={{ display:"flex" }}>
         <div style={{ width:sideW,flexShrink:0,transition:"width .3s" }} className="hm-sidebar"/>
-        <Sidebar active={view} setActive={v=>{setView(v);setMobileOpen(false);}} collapsed={collapsed} user={user} onLogout={logout}/>
+        <Sidebar active={view} setActive={v=>{setView(v);setMobileOpen(false);}} collapsed={collapsed} user={user} onLogout={logout} newCount={newInqCount}/>
 
         {/* Main content */}
         <div style={{ flex:1,marginLeft:sideW,transition:"margin-left .3s",minWidth:0 }}>

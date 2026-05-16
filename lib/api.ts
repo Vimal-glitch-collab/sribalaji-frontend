@@ -35,6 +35,7 @@ export const publicApi = {
   getProjects: (params?: object) => api.get("/projects", { params }),
   getTestimonials: () => api.get("/testimonials"),
   getGallery: (params?: object) => api.get("/gallery", { params }),
+  getSettings: () => api.get("/settings"),
 };
 
 // ─── Admin API helpers ────────────────────────────────
@@ -50,7 +51,7 @@ export const adminApi = {
   deleteInquiry: (id: string) => api.delete(`/inquiries/${id}`),
 
   // Machinery
-  getMachinery: () => api.get("/machinery"),
+  getMachinery: () => api.get("/machinery/all"),
   createMachinery: (data: FormData) => api.post("/machinery", data, { headers: { "Content-Type": "multipart/form-data" } }),
   updateMachinery: (id: string, data: FormData) => api.patch(`/machinery/${id}`, data, { headers: { "Content-Type": "multipart/form-data" } }),
   deleteMachinery: (id: string) => api.delete(`/machinery/${id}`),
@@ -62,13 +63,17 @@ export const adminApi = {
   deleteProject: (id: string) => api.delete(`/projects/${id}`),
 
   // Testimonials
-  getTestimonials: () => api.get("/testimonials"),
+  getTestimonials: () => api.get("/testimonials/all"),
   createTestimonial: (data: object) => api.post("/testimonials", data),
   updateTestimonial: (id: string, data: object) => api.patch(`/testimonials/${id}`, data),
   deleteTestimonial: (id: string) => api.delete(`/testimonials/${id}`),
 
   // Gallery
-  getGallery: () => api.get("/gallery"),
+  getGallery: () => api.get("/gallery/all"),
   uploadGallery: (data: FormData) => api.post("/gallery", data, { headers: { "Content-Type": "multipart/form-data" } }),
   deleteGallery: (id: string) => api.delete(`/gallery/${id}`),
+
+  // Settings
+  getSettings: () => api.get("/settings"),
+  updateSettings: (data: object) => api.post("/settings", data),
 };
