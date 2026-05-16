@@ -5,6 +5,7 @@
  *           Gallery · WhyUs · Reviews · Contact · Location · Footer
  */
 
+/* eslint-disable react/no-unescaped-entities */
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Phone, Mail, MapPin, Star, Menu, X, ArrowRight, Award,
@@ -907,7 +908,7 @@ function WhyUs() {
           <div className="sl rv" style={{ justifyContent:"center",marginBottom:16 }}>Our Advantage</div>
           <h2 className="sh rv d1">WHY CHOOSE <span style={{ color:"var(--y)" }}>US?</span></h2>
           <p className="rv d2" style={{ color:"var(--mut)",fontSize:14.5,maxWidth:500,margin:"14px auto 0",lineHeight:1.72 }}>
-            20 years · 1,000+ projects · 3 JCB 3DX machines · certified operators. Here's what makes Sri Balaji the trusted choice in Tamil Nadu.
+            20 years · 1,000+ projects · 3 JCB 3DX machines · certified operators. Here&apos;s what makes Sri Balaji the trusted choice in Tamil Nadu.
           </p>
         </div>
         <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:22 }} className="g3">
@@ -949,7 +950,7 @@ function Reviews() {
   return (
     <section id="reviews" className="sec" style={{ background:"var(--blk)",position:"relative",overflow:"hidden" }}>
       <div className="fd" style={{ position:"absolute",top:-60,left:-20,
-        fontSize:"clamp(160px,28vw,300px)",color:"rgba(245,166,35,.025)",pointerEvents:"none",userSelect:"none",lineHeight:1 }}>"</div>
+        fontSize:"clamp(160px,28vw,300px)",color:"rgba(245,166,35,.025)",pointerEvents:"none",userSelect:"none",lineHeight:1 }}>&quot;</div>
       <div className="mw" style={{ position:"relative" }}>
         <div style={{ textAlign:"center",marginBottom:"clamp(36px,5vw,60px)" }}>
           <div className="sl rv" style={{ justifyContent:"center",marginBottom:16 }}>Client Reviews</div>
@@ -967,7 +968,7 @@ function Reviews() {
             <div key={`${pg}-${i}`} className={`tc rv d${i+1} ${i===1?"ft":""}`}>
               <Quote size={26} color={i===1?"rgba(0,0,0,.22)":"var(--y)"} style={{ marginBottom:16 }}/>
               <p style={{ fontSize:13.5,lineHeight:1.8,color:i===1?"#000":"var(--mut)",marginBottom:20 }}>
-                "{r.text}"
+                &quot;{r.text}&quot;
               </p>
               <div style={{ display:"flex",gap:3,marginBottom:16 }}>
                 {[...Array(r.stars)].map((_,j) => <Star key={j} size={13} fill={i===1?"#000":"var(--y)"} color={i===1?"#000":"var(--y)"}/>)}
@@ -1124,7 +1125,7 @@ function Contact() {
                 <div style={{ padding:"13px 16px",background:"rgba(34,197,94,.1)",border:"1px solid rgba(34,197,94,.3)",
                   color:"#22c55e",marginBottom:22,display:"flex",alignItems:"center",gap:9,fontSize:13.5,
                   animation:"fadeUp .3s ease" }}>
-                  <CheckCircle size={16}/> Quote request sent! We'll call you very soon.
+                  <CheckCircle size={16}/> Quote request sent! We&apos;ll call you very soon.
                 </div>
               )}
 

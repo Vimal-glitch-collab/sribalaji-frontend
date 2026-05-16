@@ -26,6 +26,7 @@ const barlowCondensed = Barlow_Condensed({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://sribalajiearthmovers.vercel.app"),
   title: {
     default: "Sri Balaji Earth Movers | JCB 3DX Rental in Sivagangai, Tamil Nadu",
     template: "%s | Sri Balaji Earth Movers",
