@@ -71,6 +71,12 @@ export const adminApi = {
   // Gallery
   getGallery: () => api.get("/gallery/all"),
   uploadGallery: (data: FormData) => api.post("/gallery", data, { headers: { "Content-Type": "multipart/form-data" } }),
+  updateGallery: (id: string, data: FormData | object) => {
+    if (data instanceof FormData) {
+      return api.patch(`/gallery/${id}`, data, { headers: { "Content-Type": "multipart/form-data" } });
+    }
+    return api.patch(`/gallery/${id}`, data);
+  },
   deleteGallery: (id: string) => api.delete(`/gallery/${id}`),
 
   // Settings

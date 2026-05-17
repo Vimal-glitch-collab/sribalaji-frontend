@@ -563,18 +563,28 @@ function GalleryView() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [newItem, setNewItem] = useState({ title:"", category:"Site Work" });
+  const [editItem, setEditItem] = useState(null);
+  const [newItem, setNewItem] = useState({ title:"", category:"Site Work", isActive:true });
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [filter, setFilter] = useState("all");
+
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await adminApi.getGallery();
       if (res.data.success) setItems(res.data.data);
+      else showToast("Failed to load gallery", "error");
     } catch (err) {
       console.error("Fetch gallery error:", err);
+      showToast(`Error: ${err.response?.data?.message || err.message}`, "error");
     } finally {
       setLoading(false);
     }
@@ -584,123 +594,237 @@ function GalleryView() {
     fetchData();
   }, [fetchData]);
 
+  const openAddModal = () => {
+    setEditItem(null);
+    setNewItem({ title:"", category:"Site Work", isActive:true });
+    setFile(null);
+    setShowAdd(true);
+  };
+
+  const openEditModal = (g) => {
+    setEditItem(g);
+    setNewItem({ title: g.title || "", category: g.category || "Site Work", isActive: g.isActive !== false });
+    setFile(null);
+    setShowAdd(true);
+  };
+
   const addItem = async () => {
-    if (!file) { alert("Please select an image"); return; }
+    if (!editItem && !file) { showToast("Please select an image file", "error"); return; }
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("image", file);
+      if (file) formData.append("image", file);
       formData.append("data", JSON.stringify(newItem));
-      
-      const res = await adminApi.uploadGallery(formData);
-      if (res.data.success) {
-        setItems(p => [res.data.data, ...p]);
-        setShowAdd(false);
-        setFile(null);
-        setNewItem({ title:"", category:"Site Work" });
+      let res;
+      if (editItem) {
+        res = await adminApi.updateGallery(editItem._id, formData);
+        if (res.data.success) {
+          setItems(p => p.map(x => x._id === editItem._id ? res.data.data : x));
+          showToast("Image updated successfully!");
+        }
+      } else {
+        res = await adminApi.uploadGallery(formData);
+        if (res.data.success) {
+          setItems(p => [res.data.data, ...p]);
+          showToast("Image uploaded to MongoDB & Cloudinary!");
+        }
       }
+      setShowAdd(false);
+      setFile(null);
+      setNewItem({ title:"", category:"Site Work", isActive:true });
+      setEditItem(null);
     } catch (err) {
       console.error("Upload error:", err);
-      alert("Failed to upload image");
+      showToast(`Upload failed: ${err.response?.data?.message || err.message}`, "error");
     } finally {
       setUploading(false);
     }
   };
 
   const deleteItem = async id => {
-    if (!confirm("Are you sure?")) return;
+    if (!confirm("Permanently delete this image from MongoDB and Cloudinary?")) return;
     try {
       const res = await adminApi.deleteGallery(id);
-      if (res.data.success) setItems(p => p.filter(x => x._id !== id));
+      if (res.data.success) {
+        setItems(p => p.filter(x => x._id !== id));
+        showToast("Image deleted from database");
+      } else {
+        showToast("Delete failed: " + res.data.message, "error");
+      }
     } catch (err) {
       console.error("Delete error:", err);
-      alert("Failed to delete");
+      showToast(`Delete failed: ${err.response?.data?.message || err.message}`, "error");
     }
   };
 
+  const toggleActive = async g => {
+    try {
+      const res = await adminApi.updateGallery(g._id, { isActive: !g.isActive });
+      if (res.data.success) {
+        setItems(p => p.map(x => x._id === g._id ? { ...x, isActive: !g.isActive } : x));
+        showToast(g.isActive ? "Image hidden from website" : "Image now visible on website");
+      }
+    } catch (err) {
+      console.error("Toggle error:", err);
+      showToast("Failed to update visibility", "error");
+    }
+  };
+
+  const CATS = ["all","Machinery","Site Work","Before-After","Team","Other"];
+  const filtered = filter === "all" ? items : items.filter(x => x.category === filter);
+
   return (
     <div className="anim">
+      {/* Toast notification */}
+      {toast && (
+        <div style={{ position:"fixed",top:20,right:20,zIndex:9999,padding:"12px 18px",
+          background:toast.type==="error"?"rgba(239,68,68,.9)":"rgba(34,197,94,.9)",
+          color:"#fff",borderRadius:8,fontSize:13,fontWeight:600,
+          animation:"slideIn .3s ease",maxWidth:300,boxShadow:"0 8px 24px rgba(0,0,0,.3)" }}>
+          {toast.msg}
+        </div>
+      )}
+
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:22,flexWrap:"wrap",gap:12 }}>
         <div>
           <h1 style={{ fontSize:22,fontWeight:700,marginBottom:4 }}>Gallery</h1>
-          <p style={{ fontSize:13,color:"var(--mut)" }}>{items.length} images · Click to preview or delete</p>
+          <p style={{ fontSize:13,color:"var(--mut)" }}>
+            {items.length} total · {items.filter(x=>x.isActive).length} visible on website
+          </p>
         </div>
-        <button className="btn btn-p" onClick={()=>setShowAdd(true)}><Plus size={15}/>Add Image</button>
+        <div style={{ display:"flex",gap:8 }}>
+          <button className="btn btn-o btn-sm" onClick={fetchData}><RefreshCw size={13}/>Refresh</button>
+          <button className="btn btn-p" onClick={openAddModal}><Plus size={15}/>Add Image</button>
+        </div>
+      </div>
+
+      {/* Category filter tabs */}
+      <div style={{ display:"flex",gap:6,marginBottom:18,flexWrap:"wrap" }}>
+        {CATS.map(c => (
+          <button key={c} onClick={() => setFilter(c)} className="btn btn-sm"
+            style={{ background:filter===c?"var(--y)":"transparent",color:filter===c?"#000":"var(--mut)",
+              border:"1px solid",borderColor:filter===c?"var(--y)":"var(--bdr2)",borderRadius:6,textTransform:"capitalize" }}>
+            {c}
+          </button>
+        ))}
       </div>
 
       <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:14 }}>
         {loading ? (
           <div style={{ gridColumn:"1/-1",padding:60,textAlign:"center",color:"var(--y)" }}>
             <RefreshCw className="spin" size={32} style={{ margin:"0 auto 12px" }}/>
-            <div>Loading gallery...</div>
+            <div>Loading gallery from MongoDB...</div>
           </div>
-        ) : items.map((g,i)=>(
-          <div key={g._id} style={{ position:"relative",border:"1px solid var(--bdr)",borderRadius:8,overflow:"hidden",background:"var(--s2)" }}>
-            <div style={{ height:150,overflow:"hidden",cursor:"pointer" }} onClick={()=>setPreview(g.image?.url)}>
-              <img src={g.image?.url} alt={g.title} style={{ width:"100%",height:"100%",objectFit:"cover",transition:"transform .3s" }}
-                onMouseEnter={e=>e.target.style.transform="scale(1.06)"}
-                onMouseLeave={e=>e.target.style.transform="scale(1)"}/>
+        ) : filtered.length === 0 ? (
+          <div style={{ gridColumn:"1/-1",padding:60,textAlign:"center",color:"var(--mut)",fontSize:14 }}>
+            <div style={{ fontSize:40,marginBottom:12 }}>📷</div>
+            {filter !== "all" ? `No images in "${filter}" category.` : "No gallery images yet. Click \"Add Image\" to upload your first photo."}
+          </div>
+        ) : filtered.map((g) => (
+          <div key={g._id} style={{ position:"relative",border:`1px solid ${g.isActive?"var(--bdr)":"rgba(239,68,68,.3)"}`,borderRadius:8,overflow:"hidden",background:"var(--s2)" }}>
+            <div style={{ position:"absolute",top:8,left:8,zIndex:2 }}>
+              <span className={`badge ${g.isActive?"badge-g":"badge-r"}`} style={{ fontSize:10 }}>
+                {g.isActive ? "Live" : "Hidden"}
+              </span>
             </div>
-            <div style={{ padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-              <div>
-                <div style={{ fontSize:12.5,fontWeight:600,color:"#fff",marginBottom:2 }}>{g.title}</div>
-                <span className="badge badge-y" style={{ fontSize:10 }}>{g.category}</span>
+            <div style={{ height:150,overflow:"hidden",cursor:"pointer" }} onClick={() => setPreview(g.image?.url)}>
+              <img src={g.image?.url} alt={g.title}
+                style={{ width:"100%",height:"100%",objectFit:"cover",transition:"transform .3s",opacity:g.isActive?1:.55 }}
+                onMouseEnter={e => e.target.style.transform="scale(1.06)"}
+                onMouseLeave={e => e.target.style.transform="scale(1)"}
+                onError={e => { e.target.style.background="#222"; e.target.alt="Image Error"; }}
+              />
+            </div>
+            <div style={{ padding:"10px 12px" }}>
+              <div style={{ fontSize:12.5,fontWeight:600,color:"#fff",marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>
+                {g.title || "Untitled"}
               </div>
-              <button className="btn btn-r btn-sm" onClick={()=>deleteItem(g._id)}><Trash2 size={12}/></button>
+              <span className="badge badge-y" style={{ fontSize:10,marginBottom:8,display:"inline-flex" }}>{g.category}</span>
+              <div style={{ display:"flex",gap:4,marginTop:6 }}>
+                <button className="btn btn-o btn-sm" style={{ flex:1,justifyContent:"center",padding:"5px 8px",fontSize:11 }}
+                  onClick={() => toggleActive(g)}>
+                  <Eye size={11}/>{g.isActive ? "Hide" : "Show"}
+                </button>
+                <button className="btn btn-o btn-sm" style={{ padding:"5px 8px" }} onClick={() => openEditModal(g)}>
+                  <Edit3 size={11}/>
+                </button>
+                <button className="btn btn-r btn-sm" style={{ padding:"5px 8px" }} onClick={() => deleteItem(g._id)}>
+                  <Trash2 size={11}/>
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Add modal */}
+      {/* Add/Edit modal */}
       {showAdd && (
-        <div className="modal-bg" onClick={()=>setShowAdd(false)}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="modal-bg" onClick={() => setShowAdd(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"18px 22px",borderBottom:"1px solid var(--bdr)" }}>
-              <h3 style={{ fontSize:16,fontWeight:700 }}>Add Gallery Image</h3>
-              <button onClick={()=>setShowAdd(false)} style={{ background:"none",border:"none",color:"var(--mut)",cursor:"pointer" }}><X size={18}/></button>
+              <h3 style={{ fontSize:16,fontWeight:700 }}>{editItem ? "Edit Gallery Image" : "Add Gallery Image"}</h3>
+              <button onClick={() => setShowAdd(false)} style={{ background:"none",border:"none",color:"var(--mut)",cursor:"pointer" }}><X size={18}/></button>
             </div>
             <div style={{ padding:22,display:"flex",flexDirection:"column",gap:14 }}>
-              <div>
-                <label style={{ fontSize:12,color:"var(--mut)",display:"block",marginBottom:6 }}>Select Image *</label>
-                <div style={{ position:"relative" }}>
-                  <input type="file" accept="image/*" onChange={e => setFile(e.target.files[0])}
-                    style={{ width:"100%",background:"var(--s3)",padding:10,borderRadius:6,border:"1px dashed var(--bdr2)",fontSize:13 }}/>
+              {editItem && editItem.image?.url && (
+                <div>
+                  <label style={{ fontSize:12,color:"var(--mut)",display:"block",marginBottom:6 }}>Current Image</label>
+                  <img src={editItem.image.url} alt="current"
+                    style={{ width:"100%",height:130,objectFit:"cover",borderRadius:6,border:"1px solid var(--bdr)" }}/>
                 </div>
+              )}
+              <div>
+                <label style={{ fontSize:12,color:"var(--mut)",display:"block",marginBottom:6 }}>
+                  {editItem ? "Replace Image (optional)" : "Select Image *"}
+                </label>
+                <input type="file" accept="image/*" onChange={e => setFile(e.target.files[0])}
+                  style={{ width:"100%",background:"var(--s3)",padding:10,borderRadius:6,border:"1px dashed var(--bdr2)",fontSize:13,color:"var(--mut)" }}/>
               </div>
+              {file && <img src={URL.createObjectURL(file)} alt="preview" style={{ width:"100%",height:150,objectFit:"cover",borderRadius:6,border:"1px solid var(--bdr)" }}/>}
               <div>
                 <label style={{ fontSize:12,color:"var(--mut)",display:"block",marginBottom:6 }}>Title</label>
-                <input className="inp" placeholder="e.g. Foundation Excavation Project" value={newItem.title} onChange={e=>setNewItem({...newItem,title:e.target.value})}/>
+                <input className="inp" placeholder="e.g. Foundation Excavation Project" value={newItem.title} onChange={e => setNewItem({...newItem,title:e.target.value})}/>
               </div>
               <div>
                 <label style={{ fontSize:12,color:"var(--mut)",display:"block",marginBottom:6 }}>Category</label>
-                <select className="inp" value={newItem.category} onChange={e=>setNewItem({...newItem,category:e.target.value})}>
+                <select className="inp" value={newItem.category} onChange={e => setNewItem({...newItem,category:e.target.value})}>
                   <option>Site Work</option><option>Machinery</option><option>Before-After</option><option>Team</option><option>Other</option>
                 </select>
               </div>
-              {file && <img src={URL.createObjectURL(file)} alt="preview" style={{ width:"100%",height:180,objectFit:"cover",borderRadius:6,border:"1px solid var(--bdr)" }}/>}
+              <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+                <input type="checkbox" id="gal-active" checked={newItem.isActive}
+                  onChange={e => setNewItem({...newItem,isActive:e.target.checked})}
+                  style={{ width:16,height:16,accentColor:"var(--y)",cursor:"pointer" }}/>
+                <label htmlFor="gal-active" style={{ fontSize:13,color:"var(--mut)",cursor:"pointer" }}>
+                  Visible on live website immediately
+                </label>
+              </div>
               <div style={{ display:"flex",gap:10,marginTop:4 }}>
                 <button className="btn btn-p" onClick={addItem} style={{ flex:1,justifyContent:"center" }} disabled={uploading}>
                   {uploading ? <RefreshCw className="spin" size={14}/> : <Save size={14}/>}
-                  <span>{uploading ? "Uploading..." : "Add Image"}</span>
+                  <span>{uploading ? "Uploading..." : editItem ? "Update Image" : "Upload & Save"}</span>
                 </button>
-                <button className="btn btn-o" onClick={()=>setShowAdd(false)} style={{ flex:1,justifyContent:"center" }}>Cancel</button>
+                <button className="btn btn-o" onClick={() => setShowAdd(false)} style={{ flex:1,justifyContent:"center" }}>Cancel</button>
+              </div>
+              <div style={{ padding:"10px 12px",background:"rgba(245,166,35,.06)",border:"1px solid rgba(245,166,35,.15)",borderRadius:6,fontSize:12,color:"var(--y)" }}>
+                💡 {editItem ? "Changes save to MongoDB instantly." : "Images upload to Cloudinary & save to MongoDB. They appear on the live website immediately."}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Preview */}
+      {/* Full preview */}
       {preview && (
-        <div className="modal-bg" onClick={()=>setPreview(null)} style={{ cursor:"pointer" }}>
+        <div className="modal-bg" onClick={() => setPreview(null)} style={{ cursor:"pointer" }}>
           <img src={preview} alt="Preview" style={{ maxWidth:"88vw",maxHeight:"88vh",objectFit:"contain",borderRadius:8 }}/>
-          <button onClick={()=>setPreview(null)} style={{ position:"absolute",top:20,right:24,background:"none",border:"none",color:"#fff",cursor:"pointer" }}><X size={28}/></button>
+          <button onClick={() => setPreview(null)} style={{ position:"absolute",top:20,right:24,background:"none",border:"none",color:"#fff",cursor:"pointer" }}><X size={28}/></button>
         </div>
       )}
     </div>
   );
 }
+
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ REVIEWS ━━━━━━━━━━━━━━━━━━━━━━━━ */
 function ReviewsView() {

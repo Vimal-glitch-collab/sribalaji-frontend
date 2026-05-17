@@ -857,6 +857,42 @@ function JCB3DX() {
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ GALLERY ━━━━━━━━━━━━━━━━━━━━━━━━ */
 function Gallery() {
   const [lb, setLb] = useState(null);
+  const [galleryItems, setGalleryItems] = useState([]);
+  const [galleryLoading, setGalleryLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+        const res = await fetch(`${API_URL}/gallery`, { cache: "no-store" });
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setGalleryItems(json.data);
+        } else {
+          // Fallback to static data if DB is empty
+          setGalleryItems(GALLERY.map((g, i) => ({
+            _id: `static_${i}`,
+            image: { url: g.img },
+            title: `Project ${i + 1}`,
+            tall: g.tall,
+          })));
+        }
+      } catch (err) {
+        console.error("Gallery fetch error:", err);
+        // Fallback to static data on error
+        setGalleryItems(GALLERY.map((g, i) => ({
+          _id: `static_${i}`,
+          image: { url: g.img },
+          title: `Project ${i + 1}`,
+          tall: g.tall,
+        })));
+      } finally {
+        setGalleryLoading(false);
+      }
+    };
+    fetchGallery();
+  }, []);
+
   return (
     <section id="gallery" className="sec" style={{ background:"var(--blk)" }}>
       <div className="mw">
@@ -867,21 +903,42 @@ function Gallery() {
             Real photos from real projects — excavation, levelling, road work and site preparation across Tamil Nadu.
           </p>
         </div>
-        <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gridAutoRows:"200px",gap:8 }} className="g4g">
-          {GALLERY.map((g,i) => (
-            <div key={i} className={`gi rv d${(i%4)+1}`}
-              style={{ gridRow: g.tall ? "span 2" : "span 1" }}
-              onClick={() => setLb(g.img)}>
-              <img src={g.img} alt={`Construction project ${i+1}`}/>
-              <div className="go" style={{ background:"rgba(0,0,0,.25)" }}>
-                <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
-                  <Eye size={24} color="var(--y)"/>
-                  <span className="fc" style={{ fontSize:10.5,letterSpacing:3,color:"#fff",textTransform:"uppercase" }}>View</span>
+
+        {galleryLoading ? (
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gridAutoRows:"200px",gap:8 }} className="g4g">
+            {[...Array(8)].map((_,i) => (
+              <div key={i} style={{ background:"var(--ch2)",borderRadius:2,animation:"pulse 1.5s ease-in-out infinite",
+                gridRow: i===0||i===3||i===7 ? "span 2":"span 1",opacity:.5 }}/>
+            ))}
+          </div>
+        ) : galleryItems.length === 0 ? (
+          <div style={{ textAlign:"center",padding:"60px 20px",color:"var(--mut)",fontSize:15 }}>
+            <div style={{ fontSize:40,marginBottom:16 }}>📷</div>
+            <p>Gallery coming soon — check back after our admin uploads project photos.</p>
+          </div>
+        ) : (
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gridAutoRows:"200px",gap:8 }} className="g4g">
+            {galleryItems.map((g, i) => {
+              const imgUrl = g.image?.url || g.img;
+              const isTall = g.tall || false;
+              return (
+                <div key={g._id || i} className={`gi rv d${(i%4)+1}`}
+                  style={{ gridRow: isTall ? "span 2" : "span 1" }}
+                  onClick={() => setLb(imgUrl)}>
+                  <img src={imgUrl} alt={g.title || `Construction project ${i+1}`}/>
+                  <div className="go" style={{ background:"rgba(0,0,0,.25)" }}>
+                    <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
+                      <Eye size={24} color="var(--y)"/>
+                      <span className="fc" style={{ fontSize:10.5,letterSpacing:3,color:"#fff",textTransform:"uppercase" }}>
+                        {g.title || "View"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
       {lb && (
         <div onClick={() => setLb(null)}
@@ -1034,15 +1091,32 @@ function Contact() {
     if (Object.keys(errors).length) { setErr(errors); return; }
     setErr({}); setSt("sending");
 
-    // Save to localStorage for admin panel
-    const inquiries = JSON.parse(localStorage.getItem("sb_inquiries") || "[]");
-    inquiries.unshift({ ...form, id: Date.now(), date: new Date().toISOString() });
-    localStorage.setItem("sb_inquiries", JSON.stringify(inquiries));
-
-    await new Promise(r => setTimeout(r, 1300));
-    setSt("sent");
-    setForm({ name:"", phone:"", service:"", message:"" });
-    setTimeout(() => setSt("idle"), 5500);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${API_URL}/inquiries`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setSt("sent");
+        setForm({ name:"", phone:"", service:"", message:"" });
+        setTimeout(() => setSt("idle"), 5500);
+      } else {
+        setSt("idle");
+        alert(json.message || "Failed to submit. Please try again.");
+      }
+    } catch (err) {
+      console.error("Inquiry submit error:", err);
+      // Fallback: save to localStorage if API is down
+      const inquiries = JSON.parse(localStorage.getItem("sb_inquiries") || "[]");
+      inquiries.unshift({ ...form, id: Date.now(), date: new Date().toISOString() });
+      localStorage.setItem("sb_inquiries", JSON.stringify(inquiries));
+      setSt("sent");
+      setForm({ name:"", phone:"", service:"", message:"" });
+      setTimeout(() => setSt("idle"), 5500);
+    }
   };
 
   const INFO = [
