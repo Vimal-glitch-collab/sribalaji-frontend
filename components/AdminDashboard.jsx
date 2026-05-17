@@ -1078,12 +1078,17 @@ function SettingsView() {
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState("contact");
 
+  // Password change state
+  const [pwForm, setPwForm] = useState({ currentPassword:"", newPassword:"", confirmPassword:"" });
+  const [pwStatus, setPwStatus] = useState(null); // {msg, type}
+  const [pwLoading, setPwLoading] = useState(false);
+
   useEffect(() => {
     const fetchSettings = async () => {
       try {
         const res = await adminApi.getSettings();
         if (res.data.success) {
-          setCfg({ ...DEFAULT_SETTINGS, ...res.data.data }); // Merge with empty defaults
+          setCfg({ ...DEFAULT_SETTINGS, ...res.data.data });
         }
       } catch (err) {
         console.error("Fetch settings error:", err);
@@ -1104,6 +1109,39 @@ function SettingsView() {
     } catch (err) {
       console.error("Save settings error:", err);
       alert("Failed to save settings");
+    }
+  };
+
+  const changePassword = async () => {
+    const { currentPassword, newPassword, confirmPassword } = pwForm;
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPwStatus({ msg: "All password fields are required", type: "error" }); return;
+    }
+    if (newPassword.length < 6) {
+      setPwStatus({ msg: "New password must be at least 6 characters", type: "error" }); return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwStatus({ msg: "New password and confirm password do not match", type: "error" }); return;
+    }
+    if (currentPassword === newPassword) {
+      setPwStatus({ msg: "New password must be different from current password", type: "error" }); return;
+    }
+    setPwLoading(true);
+    setPwStatus(null);
+    try {
+      const res = await adminApi.changePassword(currentPassword, newPassword);
+      if (res.data.success) {
+        setPwStatus({ msg: "✅ Password changed successfully! Use new password next time you log in.", type: "success" });
+        setPwForm({ currentPassword:"", newPassword:"", confirmPassword:"" });
+      } else {
+        setPwStatus({ msg: res.data.message || "Failed to change password", type: "error" });
+      }
+    } catch (err) {
+      console.error("Change password error:", err);
+      const msg = err.response?.data?.message || err.message || "Failed to change password";
+      setPwStatus({ msg, type: "error" });
+    } finally {
+      setPwLoading(false);
     }
   };
 
@@ -1184,11 +1222,11 @@ function SettingsView() {
               <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
                 <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Social Media & Google Maps</h3>
                 {[
-                  { l:"Facebook URL",       k:"facebook",  ph:"https://facebook.com/..." },
-                  { l:"Instagram URL",      k:"instagram", ph:"https://instagram.com/..." },
-                  { l:"Google Maps Latitude", k:"mapLat",  ph:"9.8545663" },
-                  { l:"Google Maps Longitude",k:"mapLng",  ph:"78.4965071" },
-                  { l:"Google Maps Short Link",k:"mapLink", ph:"https://maps.app.goo.gl/BLcBhefkxFgvycNj8" },
+                  { l:"Facebook URL",         k:"facebook",  ph:"https://facebook.com/..." },
+                  { l:"Instagram URL",        k:"instagram", ph:"https://instagram.com/..." },
+                  { l:"Google Maps Latitude", k:"mapLat",    ph:"9.8545663" },
+                  { l:"Google Maps Longitude",k:"mapLng",    ph:"78.4965071" },
+                  { l:"Google Maps Short Link",k:"mapLink",  ph:"https://maps.app.goo.gl/BLcBhefkxFgvycNj8" },
                 ].map(f=>(
                   <div key={f.k}>
                     <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>{f.l}</label>
@@ -1219,34 +1257,63 @@ function SettingsView() {
 
             {activeTab==="account" && (
               <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
-                <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Admin Account Security</h3>
-                <div style={{ padding:"12px 14px",background:"rgba(59,130,246,.08)",border:"1px solid rgba(59,130,246,.2)",borderRadius:6,fontSize:13,color:"var(--blue)",display:"flex",gap:10 }}>
-                  <AlertTriangle size={15} style={{ flexShrink:0,marginTop:1 }}/>
-                  For production: set MONGODB_URI, JWT_SECRET, and CLOUDINARY credentials in .env and use the /api/auth/change-password endpoint to update your password.
-                </div>
-                {[
-                  { l:"Current Admin Email", v:"admin@sribalaji.com", disabled:true },
-                  { l:"New Password", v:"", placeholder:"Enter new password", type:"password" },
-                  { l:"Confirm Password", v:"", placeholder:"Confirm new password", type:"password" },
-                ].map((f,i)=>(
-                  <div key={i}>
-                    <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>{f.l}</label>
-                    <input className="inp" type={f.type||"text"} defaultValue={f.v} placeholder={f.placeholder} disabled={f.disabled}
-                      style={{ opacity:f.disabled?.5:1,cursor:f.disabled?"not-allowed":"text" }}/>
+                <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Change Admin Password</h3>
+
+                {pwStatus && (
+                  <div style={{ padding:"11px 14px",background:pwStatus.type==="error"?"rgba(239,68,68,.1)":"rgba(34,197,94,.1)",
+                    border:`1px solid ${pwStatus.type==="error"?"rgba(239,68,68,.3)":"rgba(34,197,94,.3)"}`,
+                    color:pwStatus.type==="error"?"var(--red)":"var(--green)",borderRadius:6,fontSize:13,display:"flex",alignItems:"flex-start",gap:8,lineHeight:1.5 }}>
+                    <AlertTriangle size={15} style={{ flexShrink:0,marginTop:1 }}/>
+                    {pwStatus.msg}
                   </div>
-                ))}
+                )}
+
+                <div>
+                  <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>Current Password *</label>
+                  <input className="inp" type="password" placeholder="Enter your current password"
+                    value={pwForm.currentPassword}
+                    onChange={e=>setPwForm({...pwForm,currentPassword:e.target.value})}
+                    autoComplete="current-password"/>
+                </div>
+                <div>
+                  <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>New Password * (min. 6 characters)</label>
+                  <input className="inp" type="password" placeholder="Enter new password"
+                    value={pwForm.newPassword}
+                    onChange={e=>setPwForm({...pwForm,newPassword:e.target.value})}
+                    autoComplete="new-password"/>
+                </div>
+                <div>
+                  <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",display:"block",marginBottom:6 }}>Confirm New Password *</label>
+                  <input className="inp" type="password" placeholder="Re-enter new password"
+                    value={pwForm.confirmPassword}
+                    onChange={e=>setPwForm({...pwForm,confirmPassword:e.target.value})}
+                    autoComplete="new-password"/>
+                </div>
+
+                <button className="btn btn-p" onClick={changePassword} disabled={pwLoading}
+                  style={{ alignSelf:"flex-start" }}>
+                  {pwLoading ? <RefreshCw className="spin" size={14}/> : <Lock size={14}/>}
+                  {pwLoading ? "Changing Password..." : "Change Password"}
+                </button>
+
+                <div style={{ padding:"12px 14px",background:"rgba(59,130,246,.06)",border:"1px solid rgba(59,130,246,.15)",borderRadius:6,fontSize:12.5,color:"var(--blue)",lineHeight:1.6 }}>
+                  🔐 Your password is stored securely as a bcrypt hash in MongoDB. After changing, use the new password at the next login.
+                </div>
               </div>
             )}
           </>
         )}
 
-        <button className="btn btn-p" onClick={save} style={{ marginTop:22,alignSelf:"flex-start" }}>
-          <Save size={15}/>Save Settings
-        </button>
+        {activeTab !== "account" && (
+          <button className="btn btn-p" onClick={save} style={{ marginTop:22,alignSelf:"flex-start" }}>
+            <Save size={15}/>Save Settings
+          </button>
+        )}
       </div>
     </div>
   );
 }
+
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ MAIN ADMIN APP ━━━━━━━━━━━━━━━━━━━━━━━━ */
 export default function AdminDashboard() {

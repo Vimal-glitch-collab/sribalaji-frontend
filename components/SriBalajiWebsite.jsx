@@ -863,13 +863,20 @@ function Gallery() {
   useEffect(() => {
     const fetchGallery = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-        const res = await fetch(`${API_URL}/gallery`, { cache: "no-store" });
+        // Hardcoded production URL as primary — NEXT_PUBLIC vars can be undefined at runtime
+        const API_URL = process.env.NEXT_PUBLIC_API_URL
+          || "https://sribalaji-api.onrender.com/api";
+        const res = await fetch(`${API_URL}/gallery`, {
+          method: "GET",
+          headers: { "Accept": "application/json" },
+          cache: "no-store",
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
           setGalleryItems(json.data);
         } else {
-          // Fallback to static data if DB is empty
+          // DB is empty — show static fallback
           setGalleryItems(GALLERY.map((g, i) => ({
             _id: `static_${i}`,
             image: { url: g.img },
@@ -879,7 +886,7 @@ function Gallery() {
         }
       } catch (err) {
         console.error("Gallery fetch error:", err);
-        // Fallback to static data on error
+        // API unreachable — show static fallback
         setGalleryItems(GALLERY.map((g, i) => ({
           _id: `static_${i}`,
           image: { url: g.img },
@@ -1092,7 +1099,8 @@ function Contact() {
     setErr({}); setSt("sending");
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL
+        || "https://sribalaji-api.onrender.com/api";
       const res = await fetch(`${API_URL}/inquiries`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

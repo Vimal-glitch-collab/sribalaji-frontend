@@ -1,7 +1,7 @@
 // lib/api.ts — Axios API client
 import axios from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://sribalaji-api.onrender.com/api";
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -42,6 +42,7 @@ export const publicApi = {
 export const adminApi = {
   login: (email: string, password: string) => api.post("/auth/login", { email, password }),
   getMe: () => api.get("/auth/me"),
+  changePassword: (currentPassword: string, newPassword: string) => api.post("/auth/change-password", { currentPassword, newPassword }),
   getDashboard: () => api.get("/dashboard/stats"),
   getInquiriesChart: () => api.get("/dashboard/inquiries-chart"),
 
