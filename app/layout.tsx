@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Bebas_Neue, Barlow, Barlow_Condensed } from "next/font/google";
 import "../globals.css";
 import { Toaster } from "react-hot-toast";
+import Script from "next/script";
 
 const bebasNeue = Bebas_Neue({
   subsets: ["latin"],
@@ -116,9 +117,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#F5A623" />
       </head>
       <body className="bg-brand-black text-white antialiased">
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+              `}
+            </Script>
+          </>
+        )}
         {children}
         <Toaster position="bottom-right" toastOptions={{
           style: { background: "#1E1E1E", color: "#fff", border: "1px solid rgba(245,166,35,0.3)" },

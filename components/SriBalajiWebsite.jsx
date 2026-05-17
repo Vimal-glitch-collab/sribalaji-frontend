@@ -13,6 +13,7 @@ import {
   TrendingUp, ThumbsUp, BadgeCheck, Timer, Wrench, Shield,
   Navigation, Zap, BarChart2, Gauge, HardHat, Layers, ArrowUpRight
 } from "lucide-react";
+import { publicApi } from "@/lib/api";
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ CONSTANTS ━━━━━━━━━━━━━━━━━━━━━━━━ */
 const PHONE       = "+91 9443239842";
@@ -1094,26 +1095,26 @@ function Contact() {
 
   const handleSubmit = async e => {
     e.preventDefault();
+    const lastSub = localStorage.getItem("sb_last_submit");
+    if (lastSub && Date.now() - parseInt(lastSub) < 60000) {
+      alert("Please wait a minute before sending another request.");
+      return;
+    }
+
     const errors = validate();
     if (Object.keys(errors).length) { setErr(errors); return; }
     setErr({}); setSt("sending");
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL
-        || "https://sribalaji-api.onrender.com/api";
-      const res = await fetch(`${API_URL}/inquiries`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const json = await res.json();
-      if (json.success) {
+      const res = await publicApi.submitInquiry(form);
+      if (res.data.success) {
         setSt("sent");
         setForm({ name:"", phone:"", service:"", message:"" });
+        localStorage.setItem("sb_last_submit", Date.now().toString());
         setTimeout(() => setSt("idle"), 5500);
       } else {
         setSt("idle");
-        alert(json.message || "Failed to submit. Please try again.");
+        alert(res.data.message || "Failed to submit. Please try again.");
       }
     } catch (err) {
       console.error("Inquiry submit error:", err);

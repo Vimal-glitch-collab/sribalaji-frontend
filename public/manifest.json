@@ -1,0 +1,22 @@
+{
+  "name": "Sri Balaji Earth Movers",
+  "short_name": "Sri Balaji",
+  "description": "Professional JCB 3DX rental and earth works in Sivagangai, Tamil Nadu.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080808",
+  "theme_color": "#F5A623",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

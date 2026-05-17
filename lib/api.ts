@@ -83,4 +83,5 @@ export const adminApi = {
   // Settings
   getSettings: () => api.get("/settings"),
   updateSettings: (data: object) => api.post("/settings", data),
+  uploadSettingImage: (data: FormData) => api.post("/settings/upload", data, { headers: { "Content-Type": "multipart/form-data" } }),
 };
