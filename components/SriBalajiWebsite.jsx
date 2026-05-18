@@ -222,6 +222,7 @@ function useActiveSection(ids) {
     );
     ids.forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
     return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return active;
 }

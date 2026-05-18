@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { adminApi } from "@/lib/api";
 import {
-  LayoutDashboard, MessageSquare, Image, Star, Wrench, Settings,
+  LayoutDashboard, MessageSquare, Image as ImageIcon, Star, Wrench, Settings,
   LogOut, Menu, X, Eye, Trash2, Edit3, Plus, Check, ChevronDown,
   Phone, Upload, Save, AlertTriangle, TrendingUp, Users,
   RefreshCw, Search, Filter, Bell, Lock, User, Globe,
@@ -209,7 +209,7 @@ function LoginPage({ onLogin }) {
 const MENU = [
   { id:"dashboard",  label:"Dashboard",  icon:<LayoutDashboard size={17}/> },
   { id:"inquiries",  label:"Inquiries",  icon:<MessageSquare size={17}/>,  badge:0 },
-  { id:"gallery",    label:"Gallery",    icon:<Image size={17}/> },
+  { id:"gallery",    label:"Gallery",    icon:<ImageIcon size={17}/> },
   { id:"reviews",    label:"Reviews",    icon:<Star size={17}/> },
   { id:"services",   label:"Services",   icon:<Wrench size={17}/> },
   { id:"settings",   label:"Settings",   icon:<Settings size={17}/> },
@@ -278,7 +278,7 @@ function DashboardView() {
     { label:"Total Inquiries", val:0,  change:"...", up:true,  color:"var(--y)",    icon:<MessageSquare size={20}/> },
     { label:"New (Unread)",    val:0,   change:"Today", up:true,  color:"var(--blue)", icon:<Bell size={20}/> },
     { label:"Converted",       val:0,  change:"...",  up:true,  color:"var(--green)",icon:<CheckCircle size={20}/> },
-    { label:"Gallery Images",  val:0,  change:"...",   up:true,  color:"var(--purple)",icon:<Image size={20}/> },
+    { label:"Gallery Images",  val:0,  change:"...",   up:true,  color:"var(--purple)",icon:<ImageIcon size={20}/> },
   ]);
   const [recentInq, setRecentInq] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -293,7 +293,7 @@ function DashboardView() {
             { label:"Total Inquiries", val:s.totalInquiries,  change:`${s.monthlyGrowth}%`, up:s.monthlyGrowth>=0,  color:"var(--y)",    icon:<MessageSquare size={20}/> },
             { label:"New (Unread)",    val:s.newInquiries,    change:"Active", up:true,  color:"var(--blue)", icon:<Bell size={20}/> },
             { label:"Total Projects",  val:s.totalProjects,   change:"+",  up:true,  color:"var(--green)",icon:<CheckCircle size={20}/> },
-            { label:"Gallery Images",  val:s.totalGallery,    change:"+",   up:true,  color:"var(--purple)",icon:<Image size={20}/> },
+            { label:"Gallery Images",  val:s.totalGallery,    change:"+",   up:true,  color:"var(--purple)",icon:<ImageIcon size={20}/> },
           ]);
         }
         const inqRes = await adminApi.getInquiries({ limit: 5 });
