@@ -92,12 +92,20 @@ const AdminStyles = () => (
     .sc:hover{border-color:var(--bdr2)}
     .sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px;background:var(--y)}
 
+    .stat-cards-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+    .dashboard-columns-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+
     /* ── Responsive ── */
     @media(max-width:768px){
       :root{--sb:0px}
       .sidebar{transform:translateX(-100%)!important}
       .sidebar.open{transform:translateX(0)!important}
       .main-content{margin-left:0!important}
+      .stat-cards-grid{grid-template-columns:repeat(2,1fr)!important;gap:12px!important;margin-bottom:18px!important}
+      .dashboard-columns-grid{grid-template-columns:1fr!important;gap:16px!important}
+    }
+    @media(max-width:480px){
+      .stat-cards-grid{grid-template-columns:1fr!important}
     }
   `}</style>
 );
@@ -314,7 +322,7 @@ function DashboardView() {
       </div>
 
       {/* Stat cards */}
-      <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:24 }}>
+      <div className="stat-cards-grid">
         {stats.map((s,i)=>(
           <div key={i} className="sc">
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14 }}>
@@ -331,7 +339,7 @@ function DashboardView() {
         ))}
       </div>
 
-      <div style={{ display:"grid",gridTemplateColumns:"2fr 1fr",gap:16 }}>
+      <div className="dashboard-columns-grid">
         {/* Recent inquiries */}
         <div className="ac">
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16 }}>

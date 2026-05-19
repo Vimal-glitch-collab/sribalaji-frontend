@@ -180,6 +180,9 @@ const GlobalStyles = () => (
     /* Stat num */
     .sn{font-family:'Bebas Neue',sans-serif;font-size:clamp(44px,6vw,68px);line-height:1;color:#fff}
 
+    .hero-img{width:100%;height:100%;object-fit:cover;object-position:78% center;transform-origin:78% center}
+    .hero-btns{display:flex;gap:14;flex-wrap:wrap;margin-top:34px}
+
     /* Grid responsive */
     @media(max-width:1100px){.g4{grid-template-columns:repeat(2,1fr)!important}}
     @media(max-width:900px){.g3{grid-template-columns:repeat(2,1fr)!important}.g32{grid-template-columns:1fr!important}}
@@ -191,6 +194,9 @@ const GlobalStyles = () => (
       .g4,.g3,.g2{grid-template-columns:1fr!important}
       .g22{grid-template-columns:repeat(2,1fr)!important}
       .g4g{grid-template-columns:repeat(2,1fr)!important}
+      .hero-img{object-position:82% center!important;transform-origin:82% center!important}
+      .hero-btns{flex-direction:column!important;gap:10px!important}
+      .hero-btns .btn{width:100%!important;justify-content:center!important}
     }
     @media(max-width:480px){
       .g22,.g4g{grid-template-columns:1fr!important}
@@ -471,9 +477,10 @@ function Hero() {
         <img
           src="https://res.cloudinary.com/dqjmcwogp/image/upload/q_auto/f_auto/v1779174972/WhatsApp_Image_2026-05-19_at_12.15.05_2_mowv8y.jpg"
           alt="JCB 3DX working on earth excavation site"
-          style={{ width:"100%",height:"100%",objectFit:"cover",objectPosition:"center",
-            animation: rdy ? "kenBurns 14s ease-in-out alternate infinite" : "none",
-            transformOrigin:"center" }}
+          className="hero-img"
+          style={{
+            animation: rdy ? "kenBurns 14s ease-in-out alternate infinite" : "none"
+          }}
         />
         <div style={{ position:"absolute",inset:0,background:"linear-gradient(to right,rgba(8,8,8,.97) 0%,rgba(8,8,8,.72) 55%,rgba(8,8,8,.28) 100%)" }}/>
         <div style={{ position:"absolute",inset:0,background:"linear-gradient(to top,rgba(8,8,8,.96) 0%,transparent 45%)" }}/>
@@ -508,7 +515,7 @@ function Hero() {
             Residential, Agricultural, Commercial &amp; Government Projects.
           </p>
 
-          <div style={{ display:"flex",gap:14,flexWrap:"wrap",marginTop:34,
+          <div className="hero-btns" style={{
             opacity:rdy?1:0,animation:rdy?"fadeUp .7s ease .54s both":"none" }}>
             <button className="btn btn-p" onClick={() => go("contact")}>
               <Send size={14}/><span>Get Free Quote</span>
@@ -656,7 +663,7 @@ function About() {
         </div>
 
         {/* Stats row */}
-        <div className="rv" style={{ marginTop:"clamp(44px,6vw,72px)",display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:1,background:"var(--bdr)" }}>
+        <div className="g4 rv" style={{ marginTop:"clamp(44px,6vw,72px)",display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:1,background:"var(--bdr)" }}>
           {[
             { v:20,   s:"+", l:"Years Experience",  ic:<Award size={20} color="var(--y)"/> },
             { v:1000, s:"+", l:"Projects Completed", ic:<CheckCircle size={20} color="var(--y)"/> },
