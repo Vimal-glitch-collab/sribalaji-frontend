@@ -1,30 +1,12 @@
 // app/layout.tsx
 import type { Metadata } from "next";
-import { Bebas_Neue, Barlow, Barlow_Condensed } from "next/font/google";
 import "../globals.css";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 
-const bebasNeue = Bebas_Neue({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-display",
-  display: "swap",
-});
-
-const barlow = Barlow({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "900"],
-  variable: "--font-sans",
-  display: "swap",
-});
-
-const barlowCondensed = Barlow_Condensed({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-condensed",
-  display: "swap",
-});
+const bebasNeue = { variable: "font-display" };
+const barlow = { variable: "font-sans" };
+const barlowCondensed = { variable: "font-condensed" };
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://sribalajiearthmovers.vercel.app"),
@@ -119,6 +101,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#F5A623" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700;900&family=Barlow+Condensed:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        <style>{`
+          :root {
+            --font-display: 'Bebas Neue', sans-serif;
+            --font-sans: 'Barlow', sans-serif;
+            --font-condensed: 'Barlow Condensed', sans-serif;
+          }
+        `}</style>
       </head>
       <body className="bg-brand-black text-white antialiased">
         {process.env.NEXT_PUBLIC_GA_ID && (

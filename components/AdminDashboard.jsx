@@ -178,7 +178,7 @@ function LoginPage({ onLogin }) {
           <form onSubmit={handleSubmit} style={{ display:"flex",flexDirection:"column",gap:14 }}>
             <div>
               <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",marginBottom:6,display:"block" }}>Email Address</label>
-              <input className="inp" type="email" placeholder="admin@sribalaji.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/>
+              <input className="inp" type="email" placeholder="sekarbalajiearthmovers@gmail.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/>
             </div>
             <div>
               <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",marginBottom:6,display:"block" }}>Password</label>
@@ -196,9 +196,6 @@ function LoginPage({ onLogin }) {
               }
             </button>
           </form>
-          <p style={{ fontSize:12,color:"var(--dim)",textAlign:"center",marginTop:20 }}>
-            Demo: <span style={{ color:"var(--y)" }}>admin@sribalaji.com</span> / <span style={{ color:"var(--y)" }}>Admin@12345</span>
-          </p>
         </div>
       </div>
     </div>
@@ -564,7 +561,7 @@ function GalleryView() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [newItem, setNewItem] = useState({ title:"", category:"Site Work", isActive:true });
+  const [newItem, setNewItem] = useState({ title:"", category:"Site Work", isActive:true, imageUrl:"" });
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -596,20 +593,20 @@ function GalleryView() {
 
   const openAddModal = () => {
     setEditItem(null);
-    setNewItem({ title:"", category:"Site Work", isActive:true });
+    setNewItem({ title:"", category:"Site Work", isActive:true, imageUrl:"" });
     setFile(null);
     setShowAdd(true);
   };
 
   const openEditModal = (g) => {
     setEditItem(g);
-    setNewItem({ title: g.title || "", category: g.category || "Site Work", isActive: g.isActive !== false });
+    setNewItem({ title: g.title || "", category: g.category || "Site Work", isActive: g.isActive !== false, imageUrl: g.image?.url || "" });
     setFile(null);
     setShowAdd(true);
   };
 
   const addItem = async () => {
-    if (!editItem && !file) { showToast("Please select an image file", "error"); return; }
+    if (!editItem && !file && !newItem.imageUrl) { showToast("Please select a file or enter an image URL", "error"); return; }
     setUploading(true);
     try {
       const formData = new FormData();
@@ -631,7 +628,7 @@ function GalleryView() {
       }
       setShowAdd(false);
       setFile(null);
-      setNewItem({ title:"", category:"Site Work", isActive:true });
+      setNewItem({ title:"", category:"Site Work", isActive:true, imageUrl:"" });
       setEditItem(null);
     } catch (err) {
       console.error("Upload error:", err);
@@ -775,12 +772,19 @@ function GalleryView() {
               )}
               <div>
                 <label style={{ fontSize:12,color:"var(--mut)",display:"block",marginBottom:6 }}>
-                  {editItem ? "Replace Image (optional)" : "Select Image *"}
+                  {editItem ? "Replace Image File (optional)" : "Select Image File *"}
                 </label>
-                <input type="file" accept="image/*" onChange={e => setFile(e.target.files[0])}
+                <input type="file" accept="image/*" onChange={e => { setFile(e.target.files[0]); if(e.target.files[0]) setNewItem(prev=>({...prev, imageUrl:""})); }}
                   style={{ width:"100%",background:"var(--s3)",padding:10,borderRadius:6,border:"1px dashed var(--bdr2)",fontSize:13,color:"var(--mut)" }}/>
               </div>
+              <div style={{ textAlign:"center",fontSize:11,fontWeight:600,color:"var(--dim)",margin:"2px 0" }}>— OR —</div>
+              <div>
+                <label style={{ fontSize:12,color:"var(--mut)",display:"block",marginBottom:6 }}>Paste Direct Image Link (Cloudinary or Web URL)</label>
+                <input className="inp" placeholder="https://res.cloudinary.com/... or Unsplash link" value={newItem.imageUrl}
+                  onChange={e => { setNewItem({...newItem, imageUrl: e.target.value}); if(e.target.value) setFile(null); }}/>
+              </div>
               {file && <img src={URL.createObjectURL(file)} alt="preview" style={{ width:"100%",height:150,objectFit:"cover",borderRadius:6,border:"1px solid var(--bdr)" }}/>}
+              {!file && newItem.imageUrl && <img src={newItem.imageUrl} alt="preview url" onError={e => { e.target.style.display="none"; }} style={{ width:"100%",height:150,objectFit:"cover",borderRadius:6,border:"1px solid var(--bdr)" }}/>}
               <div>
                 <label style={{ fontSize:12,color:"var(--mut)",display:"block",marginBottom:6 }}>Title</label>
                 <input className="inp" placeholder="e.g. Foundation Excavation Project" value={newItem.title} onChange={e => setNewItem({...newItem,title:e.target.value})}/>
@@ -1190,7 +1194,7 @@ function SettingsView() {
                 <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Contact Information</h3>
                 {[
                   { l:"Phone Number",    k:"phone",    t:"text",  ph:"+91 9443239842" },
-                  { l:"Email Address",   k:"email",    t:"email", ph:"sribalajiearthmovers@gmail.com" },
+                  { l:"Email Address",   k:"email",    t:"email", ph:"sekarbalajiearthmovers@gmail.com" },
                   { l:"WhatsApp Number", k:"whatsapp", t:"text",  ph:"919443239842 (with country code, no +)" },
                   { l:"Business Address",k:"address",  t:"text",  ph:"Full street address" },
                   { l:"Working Hours",   k:"workingHours",t:"text",ph:"6:00 AM – 6:00 PM · Monday to Sunday" },
@@ -1383,7 +1387,7 @@ export default function AdminDashboard() {
         <Sidebar active={view} setActive={v=>{setView(v);setMobileOpen(false);}} collapsed={collapsed} user={user} onLogout={logout} newCount={newInqCount}/>
 
         {/* Main content */}
-        <div style={{ flex:1,marginLeft:sideW,transition:"margin-left .3s",minWidth:0 }}>
+        <div style={{ flex:1,transition:"margin-left .3s",minWidth:0 }}>
           {/* Top bar */}
           <div style={{ height:56,background:"var(--s1)",borderBottom:"1px solid var(--bdr)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",position:"sticky",top:0,zIndex:50 }}>
             <div style={{ display:"flex",alignItems:"center",gap:12 }}>

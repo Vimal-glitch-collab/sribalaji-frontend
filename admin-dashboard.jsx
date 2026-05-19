@@ -126,7 +126,7 @@ const MOCK_GALLERY = [
 
 const MOCK_SETTINGS = {
   phone:        "+91 9443239842",
-  email:        "sribalajiearthmovers@gmail.com",
+  email:        "sekarbalajiearthmovers@gmail.com",
   address:      "Railway Station Rd, Senthamil Nagar, Sivagangai, TN 630561",
   workingHours: "6:00 AM – 6:00 PM · Monday to Sunday",
   whatsapp:     "919443239842",
@@ -155,7 +155,7 @@ function LoginPage({ onLogin }) {
     if (!form.email || !form.password) { setErr("Email and password are required"); return; }
     setLoading(true);
     await new Promise(r => setTimeout(r, 1000));
-    if (form.email === "admin@sribalaji.com" && form.password === "Admin@12345") {
+    if (form.email === "sekarbalajiearthmovers@gmail.com" && form.password === "SriBalaji@2004") {
       localStorage.setItem("admin_token", "demo_jwt_token_sribalaji");
       onLogin({ name:"Admin", email:form.email, role:"super_admin" });
     } else {
@@ -193,7 +193,7 @@ function LoginPage({ onLogin }) {
           <form onSubmit={handleSubmit} style={{ display:"flex",flexDirection:"column",gap:14 }}>
             <div>
               <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",marginBottom:6,display:"block" }}>Email Address</label>
-              <input className="inp" type="email" placeholder="admin@sribalaji.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/>
+              <input className="inp" type="email" placeholder="sekarbalajiearthmovers@gmail.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/>
             </div>
             <div>
               <label style={{ fontSize:12,fontWeight:500,color:"var(--mut)",marginBottom:6,display:"block" }}>Password</label>
@@ -212,7 +212,7 @@ function LoginPage({ onLogin }) {
             </button>
           </form>
           <p style={{ fontSize:12,color:"var(--dim)",textAlign:"center",marginTop:20 }}>
-            Demo: <span style={{ color:"var(--y)" }}>admin@sribalaji.com</span> / <span style={{ color:"var(--y)" }}>Admin@12345</span>
+            Demo: <span style={{ color:"var(--y)" }}>sekarbalajiearthmovers@gmail.com</span> / <span style={{ color:"var(--y)" }}>SriBalaji@2004</span>
           </p>
         </div>
       </div>
@@ -800,7 +800,7 @@ function SettingsView() {
             <h3 style={{ fontSize:15,fontWeight:700,marginBottom:4 }}>Contact Information</h3>
             {[
               { l:"Phone Number",    k:"phone",    t:"text",  ph:"+91 9443239842" },
-              { l:"Email Address",   k:"email",    t:"email", ph:"sribalajiearthmovers@gmail.com" },
+              { l:"Email Address",   k:"email",    t:"email", ph:"sekarbalajiearthmovers@gmail.com" },
               { l:"WhatsApp Number", k:"whatsapp", t:"text",  ph:"919443239842 (with country code, no +)" },
               { l:"Business Address",k:"address",  t:"text",  ph:"Full street address" },
               { l:"Working Hours",   k:"workingHours",t:"text",ph:"6:00 AM – 6:00 PM · Monday to Sunday" },
@@ -873,7 +873,7 @@ function SettingsView() {
               For production: set MONGODB_URI, JWT_SECRET, and CLOUDINARY credentials in .env and use the /api/auth/change-password endpoint to update your password.
             </div>
             {[
-              { l:"Current Admin Email", v:"admin@sribalaji.com", disabled:true },
+              { l:"Current Admin Email", v:"sekarbalajiearthmovers@gmail.com", disabled:true },
               { l:"New Password", v:"", placeholder:"Enter new password", type:"password" },
               { l:"Confirm Password", v:"", placeholder:"Confirm new password", type:"password" },
             ].map((f,i)=>(
@@ -897,7 +897,7 @@ function SettingsView() {
 /* ━━━━━━━━━━━━━━━━━━━━━━━━ MAIN ADMIN APP ━━━━━━━━━━━━━━━━━━━━━━━━ */
 export default function AdminDashboard() {
   const [user, setUser] = useState(() => {
-    try { const t = localStorage.getItem("admin_token"); return t ? { name:"Admin",email:"admin@sribalaji.com",role:"super_admin" } : null; } catch { return null; }
+    try { const t = localStorage.getItem("admin_token"); return t ? { name:"Admin",email:"sekarbalajiearthmovers@gmail.com",role:"super_admin" } : null; } catch { return null; }
   });
   const [view, setView] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);

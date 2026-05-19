@@ -227,6 +227,42 @@ function useActiveSection(ids) {
   return active;
 }
 
+function useLiveReviews() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    publicApi.getTestimonials()
+      .then(res => {
+        if (res.data?.success && res.data?.data?.length) {
+          setItems(res.data.data.map(r => ({
+            name: r.name,
+            role: r.role,
+            stars: r.stars,
+            text: r.text,
+            av: r.avatar || r.name?.slice(0, 2).toUpperCase() || "?",
+          })));
+        } else if (res.data?.length) {
+          setItems(res.data.map(r => ({
+            name: r.name,
+            role: r.role,
+            stars: r.stars,
+            text: r.text,
+            av: r.avatar || r.name?.slice(0, 2).toUpperCase() || "?",
+          })));
+        } else {
+          setItems(REVIEWS);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.warn("Failed to fetch live reviews (using static fallback):", err.message || err);
+        setItems(REVIEWS);
+        setLoading(false);
+      });
+  }, []);
+  return { items: items.length ? items : REVIEWS, loading };
+}
+
 function AnimCounter({ to, suffix = "", dur = 2000 }) {
   const [n, setN] = useState(0);
   const ref = useRef();
@@ -262,12 +298,12 @@ const NAV = [
 ];
 
 const SERVICES = [
-  { em:"⛏️", t:"Earth Excavation",      d:"Precision deep and shallow excavation for house foundations, basements, water tanks, irrigation canals, open drains and trenching.", img:"https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=700&q=82" },
-  { em:"🌍", t:"Land Levelling",         d:"Agricultural and residential plot grading, contour levelling for farms, industrial sites and commercial land development projects.", img:"https://images.unsplash.com/photo-1591955506264-3f5a6834570a?w=700&q=82" },
-  { em:"🛣️", t:"Road Construction",      d:"Sub-grade preparation, WBM base laying, shoulder cutting and earthwork support for government and private road projects.", img:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=700&q=82" },
-  { em:"🏗️", t:"Site Preparation",       d:"Clearing, grubbing, topsoil stripping, and access road creation before any building or construction begins on site.", img:"https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=700&q=82" },
-  { em:"💥", t:"Demolition Support",     d:"Controlled dismantling of old structures, slabs, compound walls and buildings with complete debris clearance and site handover.", img:"https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=700&q=82" },
-  { em:"🚛", t:"Soil & Material Haulage",d:"Efficient transport of excavated earth, sand, gravel, rubble and construction debris using JCB loading with tipper coordination.", img:"https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=700&q=82" },
+  { em:"⛏️", t:"Earth Excavation",      d:"Precision deep and shallow excavation for house foundations, basements, water tanks, irrigation canals, open drains and trenching.", img:"https://res.cloudinary.com/dqjmcwogp/image/upload/q_auto/f_auto/v1779174990/FB_IMG_1779170416572.jpg_idbjor.jpg" },
+  { em:"🌍", t:"Land Levelling",         d:"Agricultural and residential plot grading, contour levelling for farms, industrial sites and commercial land development projects.", img:"https://res.cloudinary.com/dqjmcwogp/image/upload/q_auto/f_auto/v1779174995/20260517_130230_odjbzm.heic" },
+  { em:"🛣️", t:"Road Construction",      d:"Sub-grade preparation, WBM base laying, shoulder cutting and earthwork support for government and private road projects.", img:"https://res.cloudinary.com/dqjmcwogp/image/upload/q_auto/f_auto/v1779174978/FB_IMG_1779170357730.jpg_pw3wum.jpg" },
+  { em:"🏗️", t:"Site Preparation",       d:"Clearing, grubbing, topsoil stripping, and access road creation before any building or construction begins on site.", img:"https://res.cloudinary.com/dqjmcwogp/image/upload/q_auto/f_auto/v1779174084/WhatsApp_Image_2026-05-19_at_12.26.55_icyrpv.jpg" },
+  { em:"💥", t:"Trench Excavation",     d:"Professional trench excavation services for foundations, pipelines, drainage systems, and utility works with precise digging, proper soil handling, and complete site clearance.", img:"https://res.cloudinary.com/dqjmcwogp/image/upload/q_auto/f_auto/v1779175069/WhatsApp_Image_2026-05-19_at_12.24.17_biqrgw.jpg" },
+  { em:"🚛", t:"Agriculture",          d:"Professional agricultural trenching and land preparation services for irrigation pipelines, water flow management, and farming infrastructure using precision JCB 3DX excavation with efficient soil handling and field-ready finishing.", img:"https://res.cloudinary.com/dqjmcwogp/image/upload/q_auto/f_auto/v1779176204/WhatsApp_Image_2026-05-19_at_12.15.05_epuaze.jpg" },
 ];
 
 const JCB_SPECS = {
@@ -433,9 +469,9 @@ function Hero() {
     <section id="hero" style={{ position:"relative",height:"100vh",minHeight:640,overflow:"hidden" }}>
       <div style={{ position:"absolute",inset:0,overflow:"hidden" }}>
         <img
-          src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=1920&q=88"
-          alt="JCB 3DX construction site"
-          style={{ width:"100%",height:"100%",objectFit:"cover",objectPosition:"center 38%",
+          src="https://res.cloudinary.com/dqjmcwogp/image/upload/q_auto/f_auto/v1779174972/WhatsApp_Image_2026-05-19_at_12.15.05_2_mowv8y.jpg"
+          alt="JCB 3DX working on earth excavation site"
+          style={{ width:"100%",height:"100%",objectFit:"cover",objectPosition:"center",
             animation: rdy ? "kenBurns 14s ease-in-out alternate infinite" : "none",
             transformOrigin:"center" }}
         />
@@ -560,8 +596,8 @@ function About() {
 
           <div className="rvl" style={{ position:"relative" }}>
             <div style={{ position:"relative",overflow:"hidden" }}>
-              <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900&q=85"
-                alt="JCB 3DX earth moving Tamil Nadu"
+              <img src="/about-jcb.jpg"
+                alt="Sri Balaji Earth Movers JCB 3DX Backhoe Loader"
                 style={{ width:"100%",height:"clamp(360px,45vw,540px)",objectFit:"cover",filter:"brightness(.82)",display:"block" }}/>
               <div style={{ position:"absolute",bottom:-1,right:-1,background:"var(--y)",padding:"22px 26px",
                 clipPath:"polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)" }}>
@@ -692,9 +728,9 @@ function JCB3DX() {
   ];
 
   const images = [
-    "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=900&q=85",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900&q=85",
-    "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=900&q=85",
+    "https://res.cloudinary.com/dqjmcwogp/image/upload/q_auto/f_auto/v1779177398/WhatsApp_Image_2026-05-19_at_13.19.20_hrbrsv.jpg",
+    "https://res.cloudinary.com/dqjmcwogp/image/upload/q_auto/f_auto/v1779177052/WhatsApp_Image_2026-05-19_at_13.19.45_qlk4gl.jpg",
+    "https://res.cloudinary.com/dqjmcwogp/image/upload/q_auto/f_auto/v1779177052/WhatsApp_Image_2026-05-19_at_13.19.20_1_el7sp2.jpg",
   ];
 
   return (
@@ -873,7 +909,16 @@ function Gallery() {
           headers: { "Accept": "application/json" },
           cache: "no-store",
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+          console.warn(`Gallery fetch response not OK: HTTP ${res.status}`);
+          setGalleryItems(GALLERY.map((g, i) => ({
+            _id: `static_${i}`,
+            image: { url: g.img },
+            title: `Project ${i + 1}`,
+            tall: g.tall,
+          })));
+          return;
+        }
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
           setGalleryItems(json.data);
@@ -887,7 +932,7 @@ function Gallery() {
           })));
         }
       } catch (err) {
-        console.error("Gallery fetch error:", err);
+        console.warn("Gallery fetch error (using static fallback):", err.message || err);
         // API unreachable — show static fallback
         setGalleryItems(GALLERY.map((g, i) => ({
           _id: `static_${i}`,
@@ -901,6 +946,18 @@ function Gallery() {
     };
     fetchGallery();
   }, []);
+
+  // Re-initialize ScrollReveal for dynamic gallery items once loaded
+  useEffect(() => {
+    if (galleryItems.length === 0) return;
+    const els = document.querySelectorAll("#gallery .rv, #gallery .rvl, #gallery .rvr, #gallery .rvs");
+    const io = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("in"); }),
+      { threshold: 0.1, rootMargin: "0px 0px -28px 0px" }
+    );
+    els.forEach(el => io.observe(el));
+    return () => io.disconnect();
+  }, [galleryItems]);
 
   return (
     <section id="gallery" className="sec" style={{ background:"var(--blk)" }}>
@@ -1009,8 +1066,9 @@ function WhyUs() {
 function Reviews() {
   const [pg, setPg] = useState(0);
   const pp = 3;
-  const tot = Math.ceil(REVIEWS.length / pp);
-  const vis = REVIEWS.slice(pg * pp, pg * pp + pp);
+  const { items: reviewItems } = useLiveReviews();
+  const tot = Math.ceil(reviewItems.length / pp);
+  const vis = reviewItems.slice(pg * pp, pg * pp + pp);
 
   return (
     <section id="reviews" className="sec" style={{ background:"var(--blk)",position:"relative",overflow:"hidden" }}>
@@ -1028,9 +1086,9 @@ function Reviews() {
           </div>
         </div>
 
-        <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:22,marginBottom:36 }} className="g3">
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:22,marginBottom:36 }} className="g3 rv">
           {vis.map((r,i) => (
-            <div key={`${pg}-${i}`} className={`tc rv d${i+1} ${i===1?"ft":""}`}>
+            <div key={`${pg}-${i}`} className={`tc ${i===1?"ft":""}`} style={{ animation:"fadeIn 0.4s ease-in-out" }}>
               <Quote size={26} color={i===1?"rgba(0,0,0,.22)":"var(--y)"} style={{ marginBottom:16 }}/>
               <p style={{ fontSize:13.5,lineHeight:1.8,color:i===1?"#000":"var(--mut)",marginBottom:20 }}>
                 "{r.text}"
@@ -1132,7 +1190,7 @@ function Contact() {
   const INFO = [
     { ic:<Phone size={17}/>,  l:"Phone",         v:PHONE,                                                   h:PHONE_TEL },
     { ic:<MessageCircle size={17}/>, l:"WhatsApp",v:PHONE,                                                  h:`${WA_BASE}?text=Hi%2C+I+need+JCB+3DX+rental` },
-    { ic:<Mail size={17}/>,   l:"Email",         v:"sribalajiearthmovers@gmail.com",                        h:"mailto:sribalajiearthmovers@gmail.com" },
+    { ic:<Mail size={17}/>,   l:"Email",         v:"sekarbalajiearthmovers@gmail.com",                        h:"mailto:sekarbalajiearthmovers@gmail.com" },
     { ic:<MapPin size={17}/>, l:"Address",       v:"Railway Station Rd, Senthamil Nagar, Sivagangai, TN 630561", h:MAP_LINK },
     { ic:<Clock size={17}/>,  l:"Working Hours", v:"6:00 AM – 6:00 PM · Monday to Sunday",                 h:null },
   ];
@@ -1337,14 +1395,19 @@ function Footer() {
               Professional JCB 3DX rental and earth works in Sivagangai, Tamil Nadu. Est. 2004. 20+ years of trusted service.
             </p>
             <div style={{ display:"flex",gap:8,marginBottom:16 }}>
-              {[Facebook,Instagram,Youtube].map((Ic,i) => (
-                <div key={i} style={{ width:33,height:33,border:"1px solid rgba(255,255,255,.1)",
-                  display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
-                  color:"rgba(255,255,255,.38)",transition:"all .3s" }}
+              {[
+                { Ic: Facebook, href: "https://www.facebook.com/share/1FaNqb11tG/" },
+                { Ic: Instagram, href: "https://www.instagram.com/sri_balaji_earth_movers_?utm_source=qr&igsh=MTF0cGR6ZGVqb3EyMg==" },
+                { Ic: Youtube, href: "https://youtube.com" }
+              ].map((item,i) => (
+                <a key={i} href={item.href} target="_blank" rel="noreferrer"
+                  style={{ width:33,height:33,border:"1px solid rgba(255,255,255,.1)",
+                    display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
+                    color:"rgba(255,255,255,.38)",transition:"all .3s" }}
                   onMouseEnter={e => {e.currentTarget.style.borderColor="var(--y)";e.currentTarget.style.color="var(--y)"}}
                   onMouseLeave={e => {e.currentTarget.style.borderColor="rgba(255,255,255,.1)";e.currentTarget.style.color="rgba(255,255,255,.38)"}}>
-                  <Ic size={13}/>
-                </div>
+                  <item.Ic size={13}/>
+                </a>
               ))}
             </div>
             <a href={MAP_LINK} target="_blank" rel="noreferrer"
@@ -1389,7 +1452,7 @@ function Footer() {
               {[
                 { ic:<Phone size={12}/>,      t:PHONE,                               h:PHONE_TEL },
                 { ic:<MessageCircle size={12}/>,t:PHONE,                            h:`${WA_BASE}?text=Hi%2C+I+need+JCB+3DX` },
-                { ic:<Mail size={12}/>,        t:"sribalajiearthmovers@gmail.com",   h:"mailto:sribalajiearthmovers@gmail.com" },
+                { ic:<Mail size={12}/>,        t:"sekarbalajiearthmovers@gmail.com",   h:"mailto:sekarbalajiearthmovers@gmail.com" },
                 { ic:<MapPin size={12}/>,      t:"Senthamil Nagar, Sivagangai, TN", h:MAP_LINK },
                 { ic:<Clock size={12}/>,       t:"6:00 AM – 6:00 PM Daily",         h:null },
               ].map((c,i) => (
