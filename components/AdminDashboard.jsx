@@ -101,6 +101,7 @@ const AdminStyles = () => (
       .sidebar{transform:translateX(-100%)!important}
       .sidebar.open{transform:translateX(0)!important}
       .main-content{margin-left:0!important}
+      .hm-sidebar{display:none!important;width:0!important;flex-basis:0!important}
       .stat-cards-grid{grid-template-columns:repeat(2,1fr)!important;gap:12px!important;margin-bottom:18px!important}
       .dashboard-columns-grid{grid-template-columns:1fr!important;gap:16px!important}
     }
@@ -220,10 +221,10 @@ const MENU = [
   { id:"settings",   label:"Settings",   icon:<Settings size={17}/> },
 ];
 
-function Sidebar({ active, setActive, collapsed, user, onLogout, newCount }) {
+function Sidebar({ active, setActive, collapsed, user, onLogout, newCount, mobileOpen }) {
   const menu = MENU.map(m => m.id === "inquiries" ? { ...m, badge: newCount } : m);
   return (
-    <div className="sidebar" style={{ position:"fixed",top:0,left:0,bottom:0,width:collapsed?"64px":"240px",background:"var(--s1)",borderRight:"1px solid var(--bdr)",zIndex:100,display:"flex",flexDirection:"column",transition:"width .3s ease",overflow:"hidden" }}>
+    <div className={`sidebar ${mobileOpen ? "open" : ""}`} style={{ position:"fixed",top:0,left:0,bottom:0,width:collapsed?"64px":"240px",background:"var(--s1)",borderRight:"1px solid var(--bdr)",zIndex:100,display:"flex",flexDirection:"column",transition:"width .3s ease",overflow:"hidden" }}>
       {/* Logo */}
       <div style={{ padding:"18px 16px",borderBottom:"1px solid var(--bdr)",display:"flex",alignItems:"center",gap:11,minHeight:64,flexShrink:0 }}>
         <div style={{ width:32,height:32,background:"var(--y)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,borderRadius:6 }}>
@@ -1389,17 +1390,21 @@ export default function AdminDashboard() {
     <div style={{ background:"var(--bg)",minHeight:"100vh",fontFamily:"'Inter',sans-serif" }}>
       <AdminStyles/>
 
+      {mobileOpen && (
+        <div onClick={() => setMobileOpen(false)} style={{ position:"fixed",inset:0,zIndex:99,background:"rgba(0,0,0,.6)",backdropFilter:"blur(3px)" }}/>
+      )}
+
       {/* Sidebar — desktop */}
       <div style={{ display:"flex" }}>
         <div style={{ width:sideW,flexShrink:0,transition:"width .3s" }} className="hm-sidebar"/>
-        <Sidebar active={view} setActive={v=>{setView(v);setMobileOpen(false);}} collapsed={collapsed} user={user} onLogout={logout} newCount={newInqCount}/>
+        <Sidebar active={view} setActive={v=>{setView(v);setMobileOpen(false);}} collapsed={collapsed} user={user} onLogout={logout} newCount={newInqCount} mobileOpen={mobileOpen}/>
 
         {/* Main content */}
         <div style={{ flex:1,transition:"margin-left .3s",minWidth:0 }}>
           {/* Top bar */}
           <div style={{ height:56,background:"var(--s1)",borderBottom:"1px solid var(--bdr)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",position:"sticky",top:0,zIndex:50 }}>
             <div style={{ display:"flex",alignItems:"center",gap:12 }}>
-              <button onClick={()=>setCollapsed(v=>!v)} style={{ background:"none",border:"1px solid var(--bdr2)",color:"var(--mut)",width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",borderRadius:6,transition:"all .25s" }}
+              <button onClick={() => { if(window.innerWidth <= 768) setMobileOpen(v=>!v); else setCollapsed(v=>!v); }} style={{ background:"none",border:"1px solid var(--bdr2)",color:"var(--mut)",width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",borderRadius:6,transition:"all .25s" }}
                 onMouseEnter={e=>{e.currentTarget.style.color="var(--y)";e.currentTarget.style.borderColor="var(--y)"}}
                 onMouseLeave={e=>{e.currentTarget.style.color="var(--mut)";e.currentTarget.style.borderColor="var(--bdr2)"}}>
                 <Menu size={16}/>
